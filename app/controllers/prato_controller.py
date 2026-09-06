@@ -1,3 +1,4 @@
+from flask import jsonify, render_template
 from model.prato import Prato
 
 pratos = [
@@ -32,3 +33,26 @@ def buscar_prato(id):
         if prato.id == id:
             return prato.dicionario_js()
     return None
+
+def configurar_rotas(app):
+
+    @app.route("/cardapio", methods=["GET"])
+    def pagina_cardapio():
+        return render_template("index.html")
+
+
+    @app.route("/", methods=["GET"])
+    def listar_pratos():
+        return jsonify(cardapio())
+
+    @app.route("/pratos/<int:id>", methods=["GET"])
+    def consultar_prato(id):
+        prato = buscar_prato(id)
+
+        if prato:
+            return jsonify(prato)
+
+
+        return jsonify({"erro": "Prato não encontrado"}), 404
+
+    
