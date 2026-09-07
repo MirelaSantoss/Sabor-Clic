@@ -1,3 +1,5 @@
+console.log("cardapio.js carregou!");
+
 const pratos = [
     {
         id: 1,

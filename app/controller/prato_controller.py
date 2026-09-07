@@ -43,4 +43,6 @@ def consultar_prato(id):
 
     return jsonify({"erro": "Prato não encontrado"}), 404
 
+
+
     

@@ -33,9 +33,13 @@ def cadastro():
         # Aqui define p id do cliente
         id = len(clientes) + 1
 
-        cliente = Cliente(nome, telefone, cpf, data_nascimento, email, senha, genero, endereco)
+        cliente = Cliente( id, nome, telefone, cpf, data_nascimento, email, senha, genero, endereco)
         clientes.append(cliente)
 
         return "Cliente cadastrado com sucesso!"
 
     return render_template("cadastro.html")
+
+@clientes_bp.route("/carrinho", methods=["GET"])
+def carrinho():
+    return render_template("carrinho.html")

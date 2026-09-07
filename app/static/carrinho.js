@@ -26,3 +26,4 @@ function mostrarCarrinho() { // função que mostra os intem adicionados na tela
     document.getElementById("subtotal").innerHTML = // procura no HTML o elemento que tem "subtotal" e coloca o resultado dentro dele.
         `Subtotal: R$ ${subtotal.toFixed(2)}`;
 }
+mostrarCarrinho();
