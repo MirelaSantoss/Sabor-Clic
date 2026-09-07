@@ -1,23 +1,11 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "index.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block conteudo %}
 
-    <title>Cardápio</title>
-</head>
+<h2>Cardápio</h2>
 
-<body>
-    <h1>Buscar por um prato</h1>
+<div id="cardapio"></div>
 
-    <input
-        type="text"
-        id="pesquisa"
-        placeholder="Digite o ID do prato"
-        >
+<script src="{{ url_for('static', filename='js/cardapio.js') }}"></script>
 
-        <div id="cardapio"></div>
-</body>
-<script src="/static/app.js"></script>
-</html>
+{% endblock %}

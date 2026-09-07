@@ -1,23 +1,34 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Sabor & Clic</title>
 </head>
+
 <body>
+
     <header>
         <nav>
             <a href="/">Início</a>
-            <a href="/cardapio">Ver cardapio</a>
+            <a href="/cardapio">Ver cardápio</a>
         </nav>
     </header>
-    
+
     <main>
+
+        {% block conteudo %}
+
         <h2>Bem-vindo a Sabor & Clic</h2>
 
         <p>Faça seu pedido de forma simples e rápida</p>
+
+        {% endblock %}
+
     </main>
+
 </body>
+
 </html>
