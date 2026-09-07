@@ -38,7 +38,7 @@ def configurar_rotas(app):
 
     @app.route("/cardapio", methods=["GET"])
     def pagina_cardapio():
-        return render_template("index.html")
+        return render_template("cardapio.html")
 
 
     @app.route("/", methods=["GET"])
