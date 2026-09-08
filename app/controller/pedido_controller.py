@@ -1,13 +1,16 @@
-from flask import Blueprint, jsonify, request
-from model.pedido import Pedido
-from model.cliente import Cliente
-from model.endereco import Endereco
-from model.prato import Prato
+from flask import Blueprint, jsonify, request, render_template
+from ..model.pedido import Pedido
+from ..model.cliente import Cliente
+from ..model.endereco import Endereco
+from ..model.prato import Prato
 
-pedido_bp = ("pedido_controller", __name__)
+pedido_bp = Blueprint ("pedido_controller", __name__)
 
 pedidos = []
 
+@pedido_bp.route("/pedido", methods=["GET"])
+def pagina_pedidos():
+    return render_template("pedidos.html")
 
 @pedido_bp.route("/pedidos", methods=["POST"])
 def criar_pedido():
@@ -33,7 +36,7 @@ def criar_pedido():
     pedido = Pedido(cliente, endereco, itens)
     pedidos.append(pedido)
 
-    return jsonify(pedido.to_dict()), 201
+    return jsonify(pedido.pedido_dicionario()), 201
 
 
 @pedido_bp.route("/pedidos", methods=["GET"])
@@ -41,7 +44,7 @@ def listar_pedidos():
     lista = []
 
     for pedido in pedidos:
-        lista.append(pedido.to_dict())
+        lista.append(pedido.pedido_dicionario())
 
     return jsonify(lista), 200
 
@@ -62,4 +65,9 @@ def iniciar_preparo(id):
 
     return jsonify(pedido_encontrado.pedido_dicionario()), 200
 
+
+
+@pedido_bp.route("/cozinheiro", methods =["GET"])
+def pagina_cozinheiro():
+    return render_template("cozinha.html")
 
