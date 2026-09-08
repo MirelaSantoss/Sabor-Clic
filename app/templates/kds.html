@@ -1,0 +1,11 @@
+{% extends "index.html" %}
+
+{% block conteudo %}
+
+<h2>Pedidos da Cozinha</h2>
+
+<div id="kds"></div> <!--espaço em que o js colocara os pedidos da cozinha-->
+
+<script src="{{ url_for('static', filename='kds.js') }}"></script>
+
+{% endblock %}

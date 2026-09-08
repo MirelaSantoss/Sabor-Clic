@@ -1,0 +1,11 @@
+{% extends "index.html" %}
+
+{% block conteudo %}
+
+<h2>Meus Pedidos</h2>
+
+<div id="meus-pedidos"></div>
+
+<script src="{{ url_for('static', filename='pedidos.js') }}"></script>
+
+{% endblock %}
