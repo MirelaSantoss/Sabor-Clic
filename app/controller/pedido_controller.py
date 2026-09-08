@@ -1,10 +1,10 @@
 from flask import Blueprint, jsonify, request
-from model.pedido import Pedido
-from model.cliente import Cliente
-from model.endereco import Endereco
-from model.prato import Prato
+from app.model.pedido import Pedido
+from app.model.cliente import Cliente
+from app.model.endereco import Endereco
+from app.model.prato import Prato
 
-pedido_bp = ("pedido_controller", __name__)
+pedido_bp = Blueprint("pedido_controller", __name__)
 
 pedidos = []
 

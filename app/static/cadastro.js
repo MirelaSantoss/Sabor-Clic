@@ -1,5 +1,6 @@
 function validarFormulario() { // verifica se o formulario foi preenchido corretamente
-
+    console.log("FUNÇÃO FOI CHAMADA");
+    
     const nome = document.getElementById("nome").value; // procura no HTML o elemento que tenha o mesmo nome do id
     const telefone = document.getElementById("telefone").value; // value - pega o que foi digitado no campo
     const cpf = document.getElementById("cpf").value;
