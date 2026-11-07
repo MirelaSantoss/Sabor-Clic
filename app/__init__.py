@@ -10,6 +10,8 @@ from app.model.pedido import Pedido
 def create_app():
     app = Flask(__name__)
 
+    app.secret_key = "sabor_clic_chave_secreta"
+
     app.register_blueprint(clientes_bp)
     app.register_blueprint(prato_bp)
     app.register_blueprint(pedido_bp)
