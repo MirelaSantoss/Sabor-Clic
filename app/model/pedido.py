@@ -1,39 +1,112 @@
+from app.db import conectar
+
+
 class Pedido:
-    proximo_id = 1
 
-    def __init__(self, cliente, endereco, itens):
+    @staticmethod
+    def criar(cliente_id, itens):
 
-        self.id = Pedido.proximo_id 
-        Pedido.proximo_id +=1
+        conexao = conectar()
+        cursor = conexao.cursor()
 
-        self.cliente = cliente
-        self.endereco = endereco
-        self.itens = itens 
-        self.status = "Aguardando"
+        try:
 
-        self.subtotal = self.calcular_subtotal()
-        self.total = self.calcular_total()
+            total = 0
+            itens_validados = []
 
-    def calcular_subtotal(self):
-        subtotal = 0
+            # Confere os pratos e calcula o valor usando o banco.
+            for item in itens:
 
-        for prato in self.itens:
-            subtotal += prato.preco
+                prato = cursor.execute("""
+                    SELECT id, preco FROM pratos
+                    WHERE id = ? AND ativo = 1
+                """, (item["prato_id"],)).fetchone()
 
-        return subtotal
+                quantidade = int(item["quantidade"])
 
-    def iniciar_preparo(self):
-        self.status = "Iniciando Preparo"
+                if prato is None or quantidade <= 0:
+                    raise ValueError("Prato ou quantidade inválida.")
 
+                preco = prato["preco"]
+                total += preco * quantidade
 
-    def pedido_dicionario(self):
-        return {
-            "cliente": self.cliente,
-            "endereco": self.endereco.rua,
-            "itens": [{"nome": prato.nome, "pedido": prato.preco }
-                      for prato in self.itens],
-            "subtotal": self.subtotal,
-            "total": self.total,
-            "status": self.status
+                itens_validados.append((
+                    prato["id"],
+                    quantidade,
+                    preco
+                ))
 
-        }
+            cursor.execute("""
+                INSERT INTO pedidos (cliente_id, total)
+                VALUES (?, ?)
+            """, (cliente_id, total))
+
+            pedido_id = cursor.lastrowid
+
+            for prato_id, quantidade, preco in itens_validados:
+
+                cursor.execute("""
+                    INSERT INTO pedido_itens
+                    (pedido_id, prato_id, quantidade, preco_unitario)
+                    VALUES (?, ?, ?, ?)
+                """, (pedido_id, prato_id, quantidade, preco))
+
+            conexao.commit()
+
+            return pedido_id
+
+        except Exception:
+            conexao.rollback()
+            raise
+
+        finally:
+            conexao.close()
+
+    @staticmethod
+    def listar():
+
+        conexao = conectar()
+
+        pedidos = conexao.execute("""
+            SELECT pedidos.*, clientes.nome AS cliente_nome
+            FROM pedidos
+            INNER JOIN clientes
+            ON pedidos.cliente_id = clientes.id
+            ORDER BY pedidos.data_pedido DESC
+        """).fetchall()
+
+        conexao.close()
+
+        return pedidos
+
+    @staticmethod
+    def listar_cliente(cliente_id):
+
+        conexao = conectar()
+
+        pedidos = conexao.execute("""
+            SELECT * FROM pedidos
+            WHERE cliente_id = ?
+            ORDER BY data_pedido DESC
+        """, (cliente_id,)).fetchall()
+
+        conexao.close()
+
+        return pedidos
+
+    @staticmethod
+    def atualizar_status(id_pedido, status):
+
+        conexao = conectar()
+
+        cursor = conexao.execute("""
+            UPDATE pedidos
+            SET status = ?
+            WHERE id = ?
+        """, (status, id_pedido))
+
+        conexao.commit()
+        alterados = cursor.rowcount
+        conexao.close()
+
+        return alterados

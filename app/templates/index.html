@@ -10,17 +10,25 @@
 <body>
 
     <main>
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% if mensagens %}
+                {% for categoria, mensagem in mensagens %}
+                    <div class="mensagem {{ categoria }}">
+                        {{ mensagem }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         {% block conteudo %}
-        <h1>Sabor & Clic</h1>
-
-        <h2>Bem-vindo à Sabor & Clic!</h2>
-
-        <p>Faça seu pedido de forma simples e rápida.</p>
-
-        <a href="/login">Faça seu pedido aqui</a>
+            <h1>Sabor & Clic</h1>
+            <h2>Bem-vindo à Sabor & Clic!</h2>
+            <p>Faça seu pedido de forma simples e rápida.</p>
+            <a href="/login">Faça seu pedido aqui</a>
         {% endblock %}
+
     </main>
 
 </body>
-
 </html>
