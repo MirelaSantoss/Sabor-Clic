@@ -8,9 +8,11 @@ DB_PATH = os.path.join(BASE_DIR, "sabor_clic.db")
 
 def conectar():
     """Cria e retorna uma conexão com o banco de dados."""
+
     conexao = sqlite3.connect(DB_PATH)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
+
     return conexao
 
 
@@ -21,6 +23,7 @@ def criar_tabelas():
     cursor = conexao.cursor()
 
     cursor.executescript("""
+
         CREATE TABLE IF NOT EXISTS enderecos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             rua TEXT NOT NULL,
@@ -71,6 +74,19 @@ def criar_tabelas():
             FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
             FOREIGN KEY (prato_id) REFERENCES pratos(id)
         );
+
+        CREATE TABLE IF NOT EXISTS cadastros_pendentes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            telefone TEXT NOT NULL,
+            cpf TEXT NOT NULL,
+            data_nascimento TEXT NOT NULL,
+            email TEXT NOT NULL,
+            senha_hash TEXT NOT NULL,
+            genero TEXT,
+            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
     """)
 
     conexao.commit()

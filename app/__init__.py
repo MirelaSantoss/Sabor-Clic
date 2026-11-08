@@ -11,24 +11,34 @@ from app.controller.pedido_controller import pedido_bp
 
 def create_app():
 
-    app = Flask(__name__, template_folder="templates",
-                static_folder="static")
-
-    # Chave utilizada para proteger as sessões
-    app.secret_key = os.environ.get(
-        "SECRET_KEY",
-        "chave-local-sabor-clic-trocar-em-producao"
+    app = Flask(
+        __name__,
+        template_folder="templates",
+        static_folder="static"
     )
 
-    # Configurações dos cookies
+    # Chave secreta utilizada para proteger as sessões.
+    # Em produção, configure a variável de ambiente SECRET_KEY.
+    app.config["SECRET_KEY"] = os.environ.get(
+        "SECRET_KEY",
+        "chave-temporaria-para-desenvolvimento"
+    )
+
+    # Configurações de segurança dos cookies.
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+    # False permite utilizar cookies em HTTP durante o desenvolvimento local.
+    # Em produção, utilize HTTPS e altere para True.
     app.config["SESSION_COOKIE_SECURE"] = False
 
-    # Criação das tabelas
+    # Tempo de duração da sessão.
+    app.config["PERMANENT_SESSION_LIFETIME"] = 1800
+
+    # Cria as tabelas do banco de dados.
     criar_tabelas()
 
-    # Registro dos controladores
+    # Registra as rotas dos controllers.
     app.register_blueprint(clientes_bp)
     app.register_blueprint(prato_bp)
     app.register_blueprint(pedido_bp)

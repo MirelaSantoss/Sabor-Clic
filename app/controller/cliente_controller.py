@@ -6,20 +6,22 @@ from flask import (
 import sqlite3
 
 from app.model.cliente import Cliente
-from app.model.endereco import Endereco
 from app.middleware import login_obrigatorio
 
 
 clientes_bp = Blueprint("cliente", __name__)
 
 
+# ==================================================
 # LOGIN
+# ==================================================
+
 @clientes_bp.route("/login", methods=["GET", "POST"])
 def pagina_login():
 
     if request.method == "POST":
 
-        email = request.form.get("email", "").strip()
+        email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
 
         usuario = Cliente.autenticar(email, senha)
@@ -41,7 +43,10 @@ def pagina_login():
     return render_template("login.html")
 
 
+# ==================================================
 # CADASTRO DE DADOS PESSOAIS
+# ==================================================
+
 @clientes_bp.route("/formulario", methods=["GET", "POST"])
 def cadastro():
 
@@ -51,14 +56,13 @@ def cadastro():
             "nome": request.form.get("nome", "").strip(),
             "telefone": request.form.get("telefone", "").strip(),
             "cpf": request.form.get("cpf", "").strip(),
-            "data_nascimento": request.form.get(
-                "data_nascimento", ""
-            ),
+            "data_nascimento": request.form.get("data_nascimento", ""),
             "email": request.form.get("email", "").strip().lower(),
             "senha": request.form.get("senha", ""),
             "genero": request.form.get("genero", "")
         }
 
+        # Verifica se os campos obrigatórios foram preenchidos.
         campos_obrigatorios = [
             dados["nome"],
             dados["telefone"],
@@ -74,24 +78,51 @@ def cadastro():
 
             return render_template("cadastro.html")
 
+        # Verifica o tamanho mínimo da senha.
         if len(dados["senha"]) < 8:
 
             flash("A senha deve ter pelo menos 8 caracteres.", "erro")
 
             return render_template("cadastro.html")
 
-        session["dados_cliente"] = dados
+        try:
 
-        return redirect(url_for("cliente.pagina_endereco"))
+            # Salva os dados temporários no banco de dados.
+            pending_id = Cliente.criar_cadastro_pendente(dados)
 
+            # Guarda somente o ID na sessão.
+            session["cadastro_pendente_id"] = pending_id
+
+            return redirect(url_for("cliente.pagina_endereco"))
+
+        except sqlite3.IntegrityError:
+
+            flash("Este CPF ou e-mail já está cadastrado.", "erro")
+
+            return render_template("cadastro.html")
+
+        except Exception as erro:
+
+            print("ERRO NO CADASTRO:", erro)
+
+            flash("Não foi possível iniciar o cadastro.", "erro")
+
+            return render_template("cadastro.html")
+
+    # CORREÇÃO: permite abrir a página pelo método GET.
     return render_template("cadastro.html")
 
 
+# ==================================================
 # CADASTRO DE ENDEREÇO
+# ==================================================
+
 @clientes_bp.route("/endereco", methods=["GET", "POST"])
 def pagina_endereco():
 
-    if "dados_cliente" not in session:
+    pending_id = session.get("cadastro_pendente_id")
+
+    if not pending_id:
 
         flash("Preencha seus dados pessoais primeiro.", "erro")
 
@@ -108,6 +139,7 @@ def pagina_endereco():
             "cep": request.form.get("cep", "").strip()
         }
 
+        # Verifica se todos os campos foram preenchidos.
         if not all(endereco.values()):
 
             flash("Preencha todos os campos do endereço.", "erro")
@@ -116,9 +148,11 @@ def pagina_endereco():
 
         try:
 
-            Cliente.cadastrar(session["dados_cliente"], endereco)
+            # Finaliza o cadastro no banco de dados.
+            Cliente.cadastrar(pending_id, endereco)
 
-            session.pop("dados_cliente", None)
+            # Remove o identificador temporário da sessão.
+            session.pop("cadastro_pendente_id", None)
 
             flash(
                 "Cadastro realizado com sucesso! Faça seu login.",
@@ -130,6 +164,8 @@ def pagina_endereco():
         except sqlite3.IntegrityError as erro:
 
             print("ERRO DE INTEGRIDADE:", erro)
+
+            session.pop("cadastro_pendente_id", None)
 
             flash(
                 "Este CPF ou e-mail já está cadastrado.",
@@ -152,7 +188,10 @@ def pagina_endereco():
     return render_template("endereco.html")
 
 
+# ==================================================
 # LOGOUT
+# ==================================================
+
 @clientes_bp.route("/logout", methods=["POST"])
 def logout():
 
@@ -163,7 +202,10 @@ def logout():
     return redirect(url_for("cliente.pagina_login"))
 
 
+# ==================================================
 # MINHA CONTA
+# ==================================================
+
 @clientes_bp.route("/minha-conta", methods=["GET"])
 @login_obrigatorio
 def minha_conta():
