@@ -1,5 +1,5 @@
 USE sabor_e_clic;
-
+--senha_hash é grande e esquisita pq está criptografada já para entrar nos requisitos de segurança
 INSERT INTO Usuario (id_usuario, nome, email, senha_hash, tipo_perfil, telefone) VALUES
 (1, 'Gustavo Vieira Stoppa', 'gustavo.stoppa@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q1', 'GERENTE', '(11) 98765-4321'),
 (2, 'Luis Fernando Lima de Clares', 'luis.clares@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q2', 'OPERADOR', '(11) 97654-3210'),

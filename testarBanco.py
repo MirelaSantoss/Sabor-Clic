@@ -1,37 +1,42 @@
 import sqlite3
 import os
 
-# Localiza a pasta onde este arquivo está salvo.
-PASTA_PROJETO = os.path.dirname(os.path.abspath(__file__))
+caminho_banco = os.path.join(os.path.dirname(__file__), 'sabor_clic.db')
+print(f"Banco consultado: {caminho_banco}")
 
-# Localiza o banco de dados correto.
-CAMINHO_BANCO = os.path.join(PASTA_PROJETO, "sabor_clic.db")
+conexao = sqlite3.connect(caminho_banco)
+cursor = conexao.cursor()
 
-print("Banco consultado:", CAMINHO_BANCO)
+#criação da tabela Usuario caso ainda ñ exista
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS Usuario (
+    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT NOT NULL,
+    tipo_perfil TEXT NOT NULL CHECK(tipo_perfil IN ('CLIENTE', 'OPERADOR', 'GERENTE')),
+    telefone TEXT,
+    data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+""")
 
-# Conecta ao banco correto.
-conexao = sqlite3.connect(CAMINHO_BANCO)
-conexao.row_factory = sqlite3.Row
+#inserção de teste caso esteja vazia
+cursor.execute("SELECT COUNT(*) FROM Usuario;")
+if cursor.fetchone()[0] == 0:
+    cursor.execute("""
+    INSERT INTO Usuario (nome, email, senha_hash, tipo_perfil, telefone)
+    VALUES ('Gustavo Vieira Stoppa', 'gustavo.stoppa@saboreclic.com.br', '$2b$12$hash', 'GERENTE', '(11) 98765-4321');
+    """)
+    conexao.commit()
 
-# Verifica os clientes.
-clientes = conexao.execute("""
-    SELECT id, nome, email, cpf
-    FROM clientes
+#consulta com a nomenclatura correta
+usuarios = cursor.execute("""
+    SELECT id_usuario, nome, email, tipo_perfil
+    FROM Usuario;
 """).fetchall()
 
-print("\n===== CLIENTES CADASTRADOS =====")
-
-for cliente in clientes:
-    print(dict(cliente))
-
-# Verifica os endereços.
-enderecos = conexao.execute("""
-    SELECT * FROM enderecos
-""").fetchall()
-
-print("\n===== ENDEREÇOS CADASTRADOS =====")
-
-for endereco in enderecos:
-    print(dict(endereco))
+print("\nutilizadores encontrados:")
+for u in usuarios:
+    print(f"ID: {u[0]} / Nome: {u[1]} / Email: {u[2]} / Perfil: {u[3]}")
 
 conexao.close()

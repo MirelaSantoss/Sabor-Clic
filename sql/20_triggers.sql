@@ -2,12 +2,14 @@ USE sabor_e_clic;
 
 DELIMITER $$
 
+--desconto automatico de insumos usados em cada prato pedido por cliente
 CREATE TRIGGER trg_baixa_estoque_item_pedido
 AFTER INSERT ON Item_Pedido
 FOR EACH ROW
 BEGIN
     UPDATE Lote_Estoque le
     INNER JOIN Composto_por cp ON le.id_ingrediente = cp.id_ingrediente
+    --GREATEST = impedir q o saldo de itens fique negativo
     SET le.qtd_atual = GREATEST(0.000, le.qtd_atual - (cp.qtd_necessaria * NEW.qtd))
     WHERE cp.id_prato = NEW.id_prato
       AND le.qtd_atual > 0.000;
@@ -33,6 +35,7 @@ BEGIN
 
 END$$
 
+-- atualiza o valor total do pedido a cada novo item q entrar no "carrinho"
 CREATE TRIGGER trg_atualiza_valor_total_pedido
 AFTER INSERT ON Item_Pedido
 FOR EACH ROW
