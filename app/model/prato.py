@@ -32,14 +32,14 @@ class Prato:
         return prato
 
     @staticmethod
-    def cadastrar(nome, descricao, preco):
+    def cadastrar(nome, descricao, preco, categoria="Pratos", imagem=None):
 
         conexao = conectar()
 
         cursor = conexao.execute("""
-            INSERT INTO pratos (nome, descricao, preco)
-            VALUES (?, ?, ?)
-        """, (nome, descricao, preco))
+            INSERT INTO pratos (nome, descricao, preco, categoria, imagem)
+            VALUES (?, ?, ?, ?, ?)
+        """, (nome, descricao, preco, categoria, imagem))
 
         conexao.commit()
         id_prato = cursor.lastrowid
@@ -48,15 +48,15 @@ class Prato:
         return id_prato
 
     @staticmethod
-    def atualizar(id_prato, nome, descricao, preco, ativo):
+    def atualizar(id_prato, nome, descricao, preco, ativo, categoria="Pratos", imagem=None):
 
         conexao = conectar()
 
         conexao.execute("""
             UPDATE pratos
-            SET nome = ?, descricao = ?, preco = ?, ativo = ?
+            SET nome = ?, descricao = ?, preco = ?, ativo = ?, categoria = ?, imagem = COALESCE(?, imagem)
             WHERE id = ?
-        """, (nome, descricao, preco, ativo, id_prato))
+        """, (nome, descricao, preco, ativo, categoria, imagem, id_prato))
 
         conexao.commit()
         conexao.close()

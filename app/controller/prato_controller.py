@@ -4,7 +4,7 @@ from flask import (
 )
 
 from app.model.prato import Prato
-from app.middleware import permissao_obrigatoria
+from app.middleware import permissao_obrigatoria, login_obrigatorio
 
 
 prato_bp = Blueprint("prato", __name__)
@@ -17,6 +17,7 @@ def inicio():
 
 
 @prato_bp.route("/cardapio", methods=["GET"])
+@login_obrigatorio
 def pagina_cardapio():
 
     return render_template("cardapio.html")
@@ -60,7 +61,7 @@ def cadastrar_prato():
     if not nome or not descricao or preco <= 0:
         return jsonify({"erro": "Informe os dados corretamente."}), 400
 
-    id_prato = Prato.cadastrar(nome, descricao, preco)
+    id_prato = Prato.cadastrar(nome, descricao, preco, dados.get("categoria", "Pratos"))
 
     return jsonify({
         "mensagem": "Prato cadastrado com sucesso.",

@@ -1,11 +1,1 @@
-{% extends "index.html" %}
-
-{% block conteudo %}
-
-<h2>Cardápio</h2>
-
-<div id="cardapio"></div>
-
-<script src="{{ url_for('static', filename='cardapio.js') }}"></script>
-
-{% endblock %}
+{% extends "index.html" %}{% block conteudo %}<div class="catalogo"><aside class="categorias"><h2>Cardápio</h2><a href="#Pratos">Pratos</a><a href="#Bebidas">Bebidas</a><a href="#Combos">Combos</a><a href="#Sobremesas">Sobremesas</a></aside><section class="catalogo-conteudo"><h1>Nosso Cardápio</h1><label class="busca">Pesquisar<input id="pesquisa" placeholder="O que você gostaria de comer?"></label><div id="cardapio"></div><a class="botao" href="/carrinho">Ver carrinho →</a></section></div><dialog id="detalhes"><div id="detalhes-corpo"></div><button id="fechar-detalhes">Fechar</button></dialog><script src="{{ url_for('static',filename='cardapio.js') }}"></script>{% endblock %}

@@ -110,3 +110,15 @@ class Pedido:
         conexao.close()
 
         return alterados
+    @staticmethod
+    def itens_do_pedido(pedido_id):
+        conexao = conectar()
+        try:
+            itens = conexao.execute("""
+                SELECT pratos.nome, pedido_itens.quantidade, pedido_itens.preco_unitario
+                FROM pedido_itens JOIN pratos ON pratos.id = pedido_itens.prato_id
+                WHERE pedido_itens.pedido_id = ?
+            """, (pedido_id,)).fetchall()
+            return [dict(item) for item in itens]
+        finally:
+            conexao.close()

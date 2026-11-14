@@ -7,6 +7,7 @@ from app.db import criar_tabelas
 from app.controller.cliente_controller import clientes_bp
 from app.controller.prato_controller import prato_bp
 from app.controller.pedido_controller import pedido_bp
+from app.controller.admin_controller import admin_bp
 
 
 def create_app():
@@ -42,5 +43,7 @@ def create_app():
     app.register_blueprint(clientes_bp)
     app.register_blueprint(prato_bp)
     app.register_blueprint(pedido_bp)
+    app.register_blueprint(admin_bp)
+    app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024
 
     return app

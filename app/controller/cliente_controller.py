@@ -1,3 +1,4 @@
+
 from flask import (
     Blueprint, request, render_template, session,
     redirect, url_for, flash, jsonify
@@ -24,9 +25,15 @@ def pagina_login():
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
 
+        modo = request.form.get("modo", "cliente")
+
+        if modo not in ("cliente", "cozinheiro", "administrador"):
+            flash("Tipo de acesso inválido.", "erro")
+            return redirect(url_for("cliente.pagina_login"))
+
         usuario = Cliente.autenticar(email, senha)
 
-        if usuario:
+        if usuario and usuario["tipo"] == modo:
 
             session.clear()
 
@@ -36,11 +43,17 @@ def pagina_login():
 
             flash("Login realizado com sucesso!", "sucesso")
 
+            if modo == "administrador":
+                return redirect(url_for("admin.painel"))
+
+            if modo == "cozinheiro":
+                return redirect(url_for("pedido_controller.pagina_cozinheiro"))
+
             return redirect(url_for("prato.pagina_cardapio"))
 
-        flash("E-mail ou senha inválidos.", "erro")
+        flash("E-mail, senha ou tipo de acesso inválidos.", "erro")
 
-    return render_template("login.html")
+    return render_template("login.html", modo="cliente")
 
 
 # ==================================================
@@ -62,7 +75,6 @@ def cadastro():
             "genero": request.form.get("genero", "")
         }
 
-        # Verifica se os campos obrigatórios foram preenchidos.
         campos_obrigatorios = [
             dados["nome"],
             dados["telefone"],
@@ -75,22 +87,17 @@ def cadastro():
         if not all(campos_obrigatorios):
 
             flash("Preencha todos os campos obrigatórios.", "erro")
-
             return render_template("cadastro.html")
 
-        # Verifica o tamanho mínimo da senha.
         if len(dados["senha"]) < 8:
 
             flash("A senha deve ter pelo menos 8 caracteres.", "erro")
-
             return render_template("cadastro.html")
 
         try:
 
-            # Salva os dados temporários no banco de dados.
             pending_id = Cliente.criar_cadastro_pendente(dados)
 
-            # Guarda somente o ID na sessão.
             session["cadastro_pendente_id"] = pending_id
 
             return redirect(url_for("cliente.pagina_endereco"))
@@ -98,7 +105,6 @@ def cadastro():
         except sqlite3.IntegrityError:
 
             flash("Este CPF ou e-mail já está cadastrado.", "erro")
-
             return render_template("cadastro.html")
 
         except Exception as erro:
@@ -106,10 +112,8 @@ def cadastro():
             print("ERRO NO CADASTRO:", erro)
 
             flash("Não foi possível iniciar o cadastro.", "erro")
-
             return render_template("cadastro.html")
 
-    # CORREÇÃO: permite abrir a página pelo método GET.
     return render_template("cadastro.html")
 
 
@@ -125,7 +129,6 @@ def pagina_endereco():
     if not pending_id:
 
         flash("Preencha seus dados pessoais primeiro.", "erro")
-
         return redirect(url_for("cliente.cadastro"))
 
     if request.method == "POST":
@@ -139,19 +142,15 @@ def pagina_endereco():
             "cep": request.form.get("cep", "").strip()
         }
 
-        # Verifica se todos os campos foram preenchidos.
         if not all(endereco.values()):
 
             flash("Preencha todos os campos do endereço.", "erro")
-
             return render_template("endereco.html")
 
         try:
 
-            # Finaliza o cadastro no banco de dados.
             Cliente.cadastrar(pending_id, endereco)
 
-            # Remove o identificador temporário da sessão.
             session.pop("cadastro_pendente_id", None)
 
             flash(
@@ -221,3 +220,37 @@ def minha_conta():
         }), 404
 
     return jsonify(dict(usuario)), 200
+
+
+# ==================================================
+# CARRINHO
+# ==================================================
+
+@clientes_bp.route("/carrinho", methods=["GET"])
+@login_obrigatorio
+def carrinho():
+
+    return render_template("carrinho.html")
+
+
+# ==================================================
+# LOGIN DO ADMINISTRADOR
+# ==================================================
+
+@clientes_bp.route("/login/administrador", methods=["GET"])
+def pagina_login_administrador():
+
+    return render_template("login.html", modo="administrador")
+
+
+# ==================================================
+# LOGIN POR TIPO DE USUÁRIO
+# ==================================================
+
+@clientes_bp.route("/login/<modo>", methods=["GET"])
+def pagina_login_tipo(modo):
+
+    if modo not in ("cliente", "cozinheiro", "administrador"):
+        return redirect(url_for("cliente.pagina_login"))
+
+    return render_template("login.html", modo=modo)

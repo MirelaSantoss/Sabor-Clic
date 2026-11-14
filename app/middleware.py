@@ -10,7 +10,7 @@ def login_obrigatorio(funcao):
 
         if "usuario_id" not in session:
 
-            if request.is_json:
+            if request.is_json or request.path.startswith("/pedidos") or request.path.startswith("/api/"):
                 return jsonify({
                     "erro": "É necessário fazer login."
                 }), 401
@@ -32,14 +32,16 @@ def permissao_obrigatoria(*tipos_permitidos):
         def verificar(*args, **kwargs):
 
             if "usuario_id" not in session:
-                return jsonify({
-                    "erro": "Usuário não autenticado."
-                }), 401
+                if request.method == "GET" and request.path == "/cozinheiro":
+                    flash("Entre como administrador para acessar a cozinha.", "erro")
+                    return redirect(url_for("cliente.pagina_login_tipo", modo="cozinheiro"))
+                return jsonify({"erro": "Usuário não autenticado."}), 401
 
             if session.get("tipo") not in tipos_permitidos:
-                return jsonify({
-                    "erro": "Você não possui permissão para esta ação."
-                }), 403
+                if request.method == "GET" and request.path == "/cozinheiro":
+                    flash("Sua conta não tem permissão para acessar a cozinha.", "erro")
+                    return redirect(url_for("cliente.pagina_login"))
+                return jsonify({"erro": "Você não possui permissão para esta ação."}), 403
 
             return funcao(*args, **kwargs)
 

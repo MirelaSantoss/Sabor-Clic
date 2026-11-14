@@ -89,5 +89,36 @@ def criar_tabelas():
 
     """)
 
+    # Migração simples: preserva os bancos de versões anteriores.
+    colunas = {linha[1] for linha in cursor.execute("PRAGMA table_info(pratos)")}
+    for nome, tipo in (("categoria", "TEXT NOT NULL DEFAULT 'Pratos'"), ("imagem", "TEXT")):
+        if nome not in colunas:
+            cursor.execute(f"ALTER TABLE pratos ADD COLUMN {nome} {tipo}")
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS historico_status (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL REFERENCES pedidos(id),
+            status TEXT NOT NULL,
+            alterado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TRIGGER IF NOT EXISTS registrar_status
+        AFTER UPDATE OF status ON pedidos
+        WHEN NEW.status <> OLD.status
+        BEGIN
+            INSERT INTO historico_status (pedido_id, status)
+            VALUES (NEW.id, NEW.status);
+        END;
+    """)
+
+    # Cardápio inicial de demonstração (sem duplicar os pratos ao reiniciar).
+    cursor.execute("SELECT COUNT(*) FROM pratos")
+    if cursor.fetchone()[0] == 0:
+        cursor.executemany("""
+            INSERT INTO pratos (nome, descricao, preco) VALUES (?, ?, ?)
+        """, [
+            ("Hambúrguer com frango", "Hambúrguer com queijo e bacon", 40.00),
+            ("Marmitex simples", "Arroz e feijão com strogonoff de frango", 27.90),
+            ("Super marmitex", "Arroz e feijão com lasanha, batata frita e salada", 40.00)
+        ])
     conexao.commit()
     conexao.close()

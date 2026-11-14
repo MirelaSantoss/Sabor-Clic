@@ -26,6 +26,9 @@ def criar_pedido():
 
     dados = request.get_json(silent=True) or {}
 
+    if session.get("tipo") != "cliente":
+        return jsonify({"erro": "Somente clientes podem realizar pedidos."}), 403
+
     itens = dados.get("itens", [])
 
     if not isinstance(itens, list) or not itens:
@@ -45,7 +48,7 @@ def criar_pedido():
             "pedido_id": pedido_id
         }), 201
 
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, KeyError):
         return jsonify({
             "erro": "Os itens ou as quantidades são inválidos."
         }), 400
@@ -60,9 +63,12 @@ def listar_pedidos():
     else:
         pedidos = Pedido.listar_cliente(session["usuario_id"])
 
-    return jsonify([
-        dict(pedido) for pedido in pedidos
-    ]), 200
+    resultado = []
+    for pedido in pedidos:
+        dados = dict(pedido)
+        dados["itens"] = Pedido.itens_do_pedido(pedido["id"])
+        resultado.append(dados)
+    return jsonify(resultado), 200
 
 
 @pedido_bp.route("/pedidos/<int:id>/status", methods=["PUT"])
@@ -101,4 +107,4 @@ def atualizar_status(id):
 @permissao_obrigatoria("cozinheiro", "administrador")
 def pagina_cozinheiro():
 
-    return render_template("cozinha.html")
+    return render_template("kds.html")

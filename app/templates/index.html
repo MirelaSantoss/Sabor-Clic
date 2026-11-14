@@ -1,34 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sabor & Clic</title>
-</head>
-
-<body>
-
-    <main>
-
-        {% with mensagens = get_flashed_messages(with_categories=true) %}
-            {% if mensagens %}
-                {% for categoria, mensagem in mensagens %}
-                    <div class="mensagem {{ categoria }}">
-                        {{ mensagem }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block conteudo %}
-            <h1>Sabor & Clic</h1>
-            <h2>Bem-vindo à Sabor & Clic!</h2>
-            <p>Faça seu pedido de forma simples e rápida.</p>
-            <a href="/login">Faça seu pedido aqui</a>
-        {% endblock %}
-
-    </main>
-
-</body>
-</html>
+<html lang="pt-br"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sabor & Clic</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><header class="topo"><a class="marca" href="/">♨ Sabor <span>&amp;</span> Clic</a><nav>
+<a href="/">Início</a><a href="/cardapio">Cardápio</a><a href="/carrinho">Carrinho</a><a href="/pedido">Pedidos</a>
+{% if session.get('tipo') == 'administrador' %}<a href="/admin">Administração</a>{% endif %}
+{% if session.get('tipo') in ('cozinheiro','administrador') %}<a href="/cozinheiro">Cozinha</a>{% endif %}
+{% if session.get('usuario_id') %}<form action="/logout" method="post"><button class="link-btn">Sair</button></form>{% else %}<a href="/login">Entrar</a><a class="botao" href="/formulario">Cadastrar</a>{% endif %}
+</nav></header>
+{% with mensagens=get_flashed_messages(with_categories=true) %}{% for categoria,mensagem in mensagens %}<p class="aviso {{ categoria }}">{{ mensagem }}</p>{% endfor %}{% endwith %}
+<main>{% block conteudo %}<section class="hero"><div><p class="sobretitulo">COZINHA · GESTÃO · ENTREGA</p><h1>Sua experiência gastronômica,<br><em>em um só lugar.</em></h1><p>Explore nosso cardápio, faça seu pedido e gerencie seus espaços gastronômicos com praticidade e sabor.</p><a class="botao" href="/cardapio">Explorar Cardápio →</a></div><div class="hero-arte"><div class="prato-ilustracao">🍝</div></div></section><section class="beneficios"><span>♨ Gestão de cardápio</span><span>🛵 Pedidos rápidos</span><span>▦ Acompanhamento de pedidos</span></section>{% endblock %}</main></body></html>
