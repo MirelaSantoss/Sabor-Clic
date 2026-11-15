@@ -1,35 +1,16 @@
-"""Crie contas de funcionários sem expor senhas no site."""
-from getpass import getpass
-from secrets import token_hex
-from werkzeug.security import generate_password_hash
+#unificação do criar_admin, sendo feito tudo aqui agr
 from app import create_app
-from app.db import conectar
+from app.model.cliente import Cliente
 
 create_app()
+
 tipo = input("Tipo (cozinheiro/administrador): ").strip().lower()
-if tipo not in ("cozinheiro", "administrador"):
-    raise SystemExit("Tipo inválido")
 nome = input("Nome: ").strip()
 email = input("E-mail: ").strip().lower()
-senha = getpass("Senha (mínimo 8 caracteres): ")
-if not nome or "@" not in email or len(senha) < 8:
-    raise SystemExit("Confira nome, e-mail e senha")
-con = conectar()
-usuarios = con.execute(
-    "SELECT id, nome, email, tipo FROM clientes"
-).fetchall()
+senha = input("Senha (mínimo 8 caracteres): ")
 
-print("USUÁRIOS CADASTRADOS:")
-
-for usuario in usuarios:
-    print(dict(usuario))
 try:
-    con.execute("""INSERT INTO clientes (nome, telefone, cpf, data_nascimento, email, senha, tipo)
-                   VALUES (?, '', ?, '', ?, ?, ?)""",
-                (nome, 'FUNC-' + token_hex(12), email, generate_password_hash(senha), tipo))
-    con.commit()
-    print("Funcionário cadastrado:", tipo)
-except Exception as erro:
-    print("Não foi possível cadastrar:", erro)
-finally:
-    con.close()
+    novo_id = Cliente.cadastrar_funcionario(nome, email, senha, tipo)
+    print(f"Funcionário cadastrado com sucesso (ID {novo_id} - {tipo}).")
+except ValueError as erro:
+    raise SystemExit(f"Erro: {erro}")

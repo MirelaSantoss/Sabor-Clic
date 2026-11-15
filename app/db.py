@@ -3,23 +3,78 @@ import os
 
 # Caminho do banco de dados
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE_DIR, "sabor_clic.db"))
-os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
+DB_PATH = os.path.join(BASE_DIR, "sabor_clic.db")
 
 
 def conectar():
-    """Cria e retorna uma conexão com o banco de dados."""
-
-    conexao = sqlite3.connect(DB_PATH, timeout=20)
+    conexao = sqlite3.connect(DB_PATH)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
-    conexao.execute("PRAGMA busy_timeout = 20000")
 
     return conexao
 
+#atualização do banco de dados local de todo mundo assim q rodar o cód
+def _migrar_tabela_clientes_se_necessario(conexao):
+    cursor = conexao.cursor()
+    colunas = cursor.execute("PRAGMA table_info(clientes)").fetchall()
+    if not colunas:
+        return
+
+    cpf_obrigatorio = any(
+        col["name"] == "cpf" and col["notnull"] == 1 for col in colunas
+    )
+    if not cpf_obrigatorio:
+        return
+
+    conexao.commit()
+    conexao.execute("PRAGMA foreign_keys = OFF")
+
+    cursor.executescript("""
+        CREATE TABLE clientes_nova (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            telefone TEXT,
+            cpf TEXT UNIQUE,
+            data_nascimento TEXT,
+            email TEXT NOT NULL UNIQUE,
+            senha TEXT NOT NULL,
+            genero TEXT,
+            tipo TEXT NOT NULL DEFAULT 'cliente'
+                CHECK (tipo IN ('cliente', 'cozinheiro', 'administrador')),
+            endereco_id INTEGER,
+            FOREIGN KEY (endereco_id) REFERENCES enderecos(id)
+        );
+
+        INSERT INTO clientes_nova (
+            id, nome, telefone, cpf, data_nascimento,
+            email, senha, genero, tipo, endereco_id
+        )
+        SELECT
+            id,
+            nome,
+            NULLIF(NULLIF(telefone, ''), 'não informado'),
+            CASE
+                WHEN cpf IS NULL OR cpf = '' OR cpf LIKE 'FUNC-%' OR cpf LIKE 'ADM-%'
+                THEN NULL
+                ELSE cpf
+            END,
+            NULLIF(NULLIF(data_nascimento, ''), 'não informado'),
+            email,
+            senha,
+            genero,
+            tipo,
+            endereco_id
+        FROM clientes;
+
+        DROP TABLE clientes;
+        ALTER TABLE clientes_nova RENAME TO clientes;
+    """)
+
+    conexao.commit()
+    conexao.execute("PRAGMA foreign_keys = ON")
+
 
 def criar_tabelas():
-    """Cria as tabelas necessárias para o funcionamento do sistema."""
 
     conexao = conectar()
     cursor = conexao.cursor()
@@ -39,13 +94,14 @@ def criar_tabelas():
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
-            telefone TEXT NOT NULL,
-            cpf TEXT NOT NULL UNIQUE,
-            data_nascimento TEXT NOT NULL,
+            telefone TEXT,
+            cpf TEXT UNIQUE,
+            data_nascimento TEXT,
             email TEXT NOT NULL UNIQUE,
             senha TEXT NOT NULL,
             genero TEXT,
-            tipo TEXT NOT NULL DEFAULT 'cliente',
+            tipo TEXT NOT NULL DEFAULT 'cliente'
+                CHECK (tipo IN ('cliente', 'cozinheiro', 'administrador')),
             endereco_id INTEGER,
             FOREIGN KEY (endereco_id) REFERENCES enderecos(id)
         );
@@ -91,19 +147,13 @@ def criar_tabelas():
 
     """)
 
-    # Migração simples: preserva os bancos de versões anteriores.
-    colunas_pedidos = {linha[1] for linha in cursor.execute("PRAGMA table_info(pedidos)")}
-    if "tempo_estimado" not in colunas_pedidos:
-        cursor.execute("ALTER TABLE pedidos ADD COLUMN tempo_estimado INTEGER")
-    colunas_clientes = {linha[1] for linha in cursor.execute("PRAGMA table_info(clientes)")}
-    for nome, tipo in (("turno", "TEXT"), ("especialidade", "TEXT")):
-        if nome not in colunas_clientes:
-            cursor.execute(f"ALTER TABLE clientes ADD COLUMN {nome} {tipo}")
+    _migrar_tabela_clientes_se_necessario(conexao)
 
     colunas = {linha[1] for linha in cursor.execute("PRAGMA table_info(pratos)")}
     for nome, tipo in (("categoria", "TEXT NOT NULL DEFAULT 'Pratos'"), ("imagem", "TEXT")):
         if nome not in colunas:
             cursor.execute(f"ALTER TABLE pratos ADD COLUMN {nome} {tipo}")
+
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS historico_status (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,30 +170,6 @@ def criar_tabelas():
         END;
     """)
 
-    # Estoque simplificado por prato e trigger de baixa automática.
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS estoque_pratos (
-            prato_id INTEGER PRIMARY KEY REFERENCES pratos(id),
-            quantidade INTEGER NOT NULL CHECK (quantidade >= 0)
-        );
-        CREATE TRIGGER IF NOT EXISTS conferir_estoque_antes_pedido
-        BEFORE INSERT ON pedido_itens
-        WHEN EXISTS (SELECT 1 FROM estoque_pratos WHERE prato_id = NEW.prato_id)
-        BEGIN
-            SELECT CASE WHEN
-                (SELECT quantidade FROM estoque_pratos WHERE prato_id = NEW.prato_id) < NEW.quantidade
-                THEN RAISE(ABORT, 'Estoque insuficiente') END;
-        END;
-        CREATE TRIGGER IF NOT EXISTS baixar_estoque_pedido
-        AFTER INSERT ON pedido_itens
-        BEGIN
-            UPDATE estoque_pratos SET quantidade = quantidade - NEW.quantidade
-            WHERE prato_id = NEW.prato_id;
-        END;
-    """)
-    # Sem registro de estoque, o produto é tratado como sem controle de quantidade.
-
-    # Cardápio inicial de demonstração (sem duplicar os pratos ao reiniciar).
     cursor.execute("SELECT COUNT(*) FROM pratos")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
@@ -153,5 +179,6 @@ def criar_tabelas():
             ("Marmitex simples", "Arroz e feijão com strogonoff de frango", 27.90),
             ("Super marmitex", "Arroz e feijão com lasanha, batata frita e salada", 40.00)
         ])
+
     conexao.commit()
     conexao.close()

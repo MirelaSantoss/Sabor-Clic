@@ -5,13 +5,14 @@ from app.db import conectar
 
 class Cliente:
 
+    PERFIS_VALIDOS = ("cliente", "cozinheiro", "administrador")
+
     @staticmethod
     def criar_cadastro_pendente(dados):
-        """Salva temporariamente os dados do cadastro no banco."""
-
         conexao = conectar()
 
         try:
+            email = dados["email"].strip().lower()
             senha_hash = generate_password_hash(dados["senha"])
 
             cursor = conexao.execute("""
@@ -20,11 +21,11 @@ class Cliente:
                  email, senha_hash, genero)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
-                dados["nome"],
-                dados["telefone"],
-                dados["cpf"],
+                dados["nome"].strip(),
+                dados["telefone"].strip(),
+                dados["cpf"].strip(),
                 dados["data_nascimento"],
-                dados["email"],
+                email,
                 senha_hash,
                 dados.get("genero")
             ))
@@ -42,8 +43,6 @@ class Cliente:
 
     @staticmethod
     def cadastrar(pending_id, endereco):
-        """Finaliza o cadastro usando os dados temporários do banco."""
-
         conexao = conectar()
 
         try:
@@ -73,8 +72,8 @@ class Cliente:
             cursor = conexao.execute("""
                 INSERT INTO clientes
                 (nome, telefone, cpf, data_nascimento,
-                 email, senha, genero, endereco_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 email, senha, genero, tipo, endereco_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'cliente', ?)
             """, (
                 pendente["nome"],
                 pendente["telefone"],
@@ -103,18 +102,68 @@ class Cliente:
             conexao.close()
 
     @staticmethod
+    def cadastrar_funcionario(nome, email, senha, tipo, telefone=None):
+        if tipo not in ("cozinheiro", "administrador"):
+            raise ValueError("Tipo de funcionário inválido.")
+
+        nome = (nome or "").strip()
+        email = (email or "").strip().lower()
+        telefone = (telefone or "").strip() or None
+
+        if not nome or "@" not in email or len(senha or "") < 8:
+            raise ValueError("Informe nome, e-mail válido e senha com pelo menos 8 caracteres.")
+
+        conexao = conectar()
+
+        try:
+            existente = conexao.execute(
+                "SELECT id FROM clientes WHERE email = ?",
+                (email,)
+            ).fetchone()
+
+            if existente:
+                raise ValueError("Este e-mail já está cadastrado.")
+
+            senha_hash = generate_password_hash(senha)
+
+            cursor = conexao.execute("""
+                INSERT INTO clientes
+                (nome, telefone, cpf, data_nascimento, email, senha, tipo)
+                VALUES (?, ?, NULL, NULL, ?, ?, ?)
+            """, (nome, telefone, email, senha_hash, tipo))
+
+            conexao.commit()
+            return cursor.lastrowid
+
+        except Exception:
+            conexao.rollback()
+            raise
+
+        finally:
+            conexao.close()
+
+    @staticmethod
     def autenticar(email, senha):
-        """Verifica o e-mail e a senha do usuário."""
+        email_normalizado = (email or "").strip().lower()
+        if not email_normalizado or not senha:
+            return None
 
         conexao = conectar()
 
         try:
             usuario = conexao.execute("""
-                SELECT * FROM clientes WHERE email = ?
-            """, (email,)).fetchone()
+                SELECT id, nome, email, senha, tipo
+                FROM clientes
+                WHERE email = ?
+            """, (email_normalizado,)).fetchone()
 
             if usuario and check_password_hash(usuario["senha"], senha):
-                return usuario
+                return {
+                    "id": usuario["id"],
+                    "nome": usuario["nome"],
+                    "email": usuario["email"],
+                    "tipo": usuario["tipo"]
+                }
 
             return None
 
@@ -123,8 +172,6 @@ class Cliente:
 
     @staticmethod
     def buscar_por_id(id_cliente):
-        """Busca os dados de um cliente pelo ID."""
-
         conexao = conectar()
 
         try:
@@ -134,7 +181,7 @@ class Cliente:
                 WHERE id = ?
             """, (id_cliente,)).fetchone()
 
-            return usuario
+            return dict(usuario) if usuario else None
 
         finally:
             conexao.close()

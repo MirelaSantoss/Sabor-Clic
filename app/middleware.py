@@ -1,20 +1,32 @@
 from functools import wraps
 from flask import session, redirect, url_for, flash, jsonify, request
-from app.db import conectar
+
+#diferenciar as chamadas de dados do json
+def _eh_requisicao_api():
+    return (
+        request.is_json
+        or request.path.startswith("/api/")
+        or request.path.startswith("/pedidos")
+        or request.path == "/minha-conta"
+    )
+
+#verificação de etiqueta do usuario
+def _destino_padrao(tipo):
+    rotas = {
+        "administrador": "admin.painel",
+        "cozinheiro": "pedido_controller.pagina_cozinheiro",
+        "cliente": "prato.pagina_cardapio",
+    }
+    destino = rotas.get(tipo, "prato.inicio")
+    return url_for(destino)
 
 
 def login_obrigatorio(funcao):
-    """Impede o acesso de usuários que não fizeram login."""
-
     @wraps(funcao)
     def verificar(*args, **kwargs):
-
         if "usuario_id" not in session:
-
-            if request.is_json or request.path.startswith("/pedidos") or request.path.startswith("/api/"):
-                return jsonify({
-                    "erro": "É necessário fazer login."
-                }), 401
+            if _eh_requisicao_api():
+                return jsonify({"erro": "É necessário fazer login."}), 401
 
             flash("Faça login para acessar esta página.", "erro")
             return redirect(url_for("cliente.pagina_login"))
@@ -25,29 +37,23 @@ def login_obrigatorio(funcao):
 
 
 def permissao_obrigatoria(*tipos_permitidos):
-    """Permite o acesso somente aos tipos de usuário autorizados."""
-
     def decorador(funcao):
-
         @wraps(funcao)
         def verificar(*args, **kwargs):
-
             if "usuario_id" not in session:
-                if request.method == "GET" and request.path == "/cozinheiro":
-                    flash("Entre como administrador para acessar a cozinha.", "erro")
-                    return redirect(url_for("cliente.pagina_login_tipo", modo="cozinheiro"))
-                return jsonify({"erro": "Usuário não autenticado."}), 401
+                if _eh_requisicao_api():
+                    return jsonify({"erro": "Usuário não autenticado."}), 401
 
-            con = conectar()
-            try:
-                usuario = con.execute("SELECT tipo FROM clientes WHERE id = ?", (session["usuario_id"],)).fetchone()
-            finally:
-                con.close()
-            if usuario is None or usuario["tipo"] not in tipos_permitidos:
-                if request.method == "GET" and request.path == "/cozinheiro":
-                    flash("Sua conta não tem permissão para acessar a cozinha.", "erro")
-                    return redirect(url_for("cliente.pagina_login"))
-                return jsonify({"erro": "Você não possui permissão para esta ação."}), 403
+                flash("Faça login para acessar esta página.", "erro")
+                return redirect(url_for("cliente.pagina_login"))
+
+            tipo_atual = session.get("tipo")
+            if tipo_atual not in tipos_permitidos:
+                if _eh_requisicao_api():
+                    return jsonify({"erro": "Você não possui permissão para esta ação."}), 403
+
+                flash("Você não tem permissão para acessar esta área.", "erro")
+                return redirect(_destino_padrao(tipo_atual))
 
             return funcao(*args, **kwargs)
 

@@ -1,15 +1,15 @@
-import os
 import uuid
 from pathlib import Path
 from flask import Blueprint, render_template, jsonify, request, current_app
-from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 from app.middleware import permissao_obrigatoria
 from app.db import conectar
 from app.model.prato import Prato
+from app.model.cliente import Cliente
 
 admin_bp = Blueprint("admin", __name__)
 EXTENSOES = {"jpg", "jpeg", "png", "webp"}
+
 
 def salvar_foto(arquivo):
     if not arquivo or not arquivo.filename:
@@ -23,10 +23,12 @@ def salvar_foto(arquivo):
     arquivo.save(pasta / novo_nome)
     return "uploads/" + novo_nome
 
+
 @admin_bp.route("/admin")
 @permissao_obrigatoria("administrador")
 def painel():
     return render_template("admin.html")
+
 
 @admin_bp.route("/api/admin/pratos", methods=["GET", "POST"])
 @permissao_obrigatoria("administrador")
@@ -50,6 +52,7 @@ def pratos():
     except (ValueError, TypeError) as erro:
         return jsonify({"erro": str(erro)}), 400
 
+
 @admin_bp.route("/api/admin/pratos/<int:id>", methods=["PUT", "DELETE"])
 @permissao_obrigatoria("administrador")
 def editar_prato(id):
@@ -72,6 +75,24 @@ def editar_prato(id):
     except (ValueError, TypeError) as erro:
         return jsonify({"erro": str(erro)}), 400
 
+#add de novos cozinheiros diretamente do site
+@admin_bp.route("/api/admin/funcionarios", methods=["POST"])
+@permissao_obrigatoria("administrador")
+def cadastrar_funcionario():
+    dados = request.get_json(silent=True) or {}
+    try:
+        novo_id = Cliente.cadastrar_funcionario(
+            dados.get("nome", ""),
+            dados.get("email", ""),
+            dados.get("senha", ""),
+            dados.get("tipo", ""),
+            dados.get("telefone")
+        )
+        return jsonify({"id": novo_id, "mensagem": "Funcionário cadastrado com sucesso!"}), 201
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+
+
 @admin_bp.route("/api/admin/relatorio")
 @permissao_obrigatoria("administrador")
 def relatorio():
@@ -80,52 +101,3 @@ def relatorio():
     resumo["funcionarios"] = [dict(x) for x in con.execute("SELECT id,nome,email,tipo FROM clientes WHERE tipo IN ('administrador','cozinheiro')")]
     con.close()
     return jsonify(resumo)
-
-
-@admin_bp.route("/api/admin/funcionarios", methods=["POST"])
-@permissao_obrigatoria("administrador")
-def cadastrar_funcionario():
-    from werkzeug.security import generate_password_hash
-    from secrets import token_hex
-    import sqlite3
-    dados = request.get_json(silent=True) or {}
-    nome = str(dados.get("nome", "")).strip()
-    email = str(dados.get("email", "")).strip().lower()
-    senha = str(dados.get("senha", ""))
-    tipo = dados.get("tipo")
-    turno = str(dados.get("turno", "")).strip()
-    especialidade = str(dados.get("especialidade", "")).strip()
-    if not nome or "@" not in email or len(senha) < 8 or tipo not in ("cozinheiro", "administrador"):
-        return jsonify({"erro": "Confira nome, e-mail, senha (8+ caracteres) e função."}), 400
-    con = conectar()
-    try:
-        con.execute("""INSERT INTO clientes
-            (nome, telefone, cpf, data_nascimento, email, senha, tipo, turno, especialidade)
-            VALUES (?, '', ?, '', ?, ?, ?, ?, ?)""",
-            (nome, 'FUNC-'+token_hex(12), email, generate_password_hash(senha), tipo, turno, especialidade))
-        con.commit()
-        return jsonify({"mensagem": "Funcionário cadastrado com sucesso."}), 201
-    except sqlite3.IntegrityError:
-        return jsonify({"erro": "E-mail já cadastrado."}), 409
-    finally:
-        con.close()
-
-@admin_bp.route("/api/admin/estoque/<int:prato_id>", methods=["PUT"])
-@permissao_obrigatoria("administrador")
-def definir_estoque(prato_id):
-    dados = request.get_json(silent=True) or {}
-    try:
-        quantidade = int(dados.get("quantidade"))
-        if quantidade < 0: raise ValueError()
-    except (ValueError, TypeError):
-        return jsonify({"erro": "Quantidade inválida."}), 400
-    con = conectar()
-    try:
-        if not con.execute("SELECT id FROM pratos WHERE id=?", (prato_id,)).fetchone():
-            return jsonify({"erro": "Prato não encontrado."}), 404
-        con.execute("""INSERT INTO estoque_pratos(prato_id,quantidade) VALUES (?,?)
-            ON CONFLICT(prato_id) DO UPDATE SET quantidade=excluded.quantidade""", (prato_id, quantidade))
-        con.commit()
-        return jsonify({"mensagem": "Estoque atualizado."})
-    finally:
-        con.close()
