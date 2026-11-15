@@ -1,5 +1,6 @@
 from functools import wraps
 from flask import session, redirect, url_for, flash, jsonify, request
+from app.db import conectar
 
 
 def login_obrigatorio(funcao):
@@ -37,7 +38,12 @@ def permissao_obrigatoria(*tipos_permitidos):
                     return redirect(url_for("cliente.pagina_login_tipo", modo="cozinheiro"))
                 return jsonify({"erro": "Usuário não autenticado."}), 401
 
-            if session.get("tipo") not in tipos_permitidos:
+            con = conectar()
+            try:
+                usuario = con.execute("SELECT tipo FROM clientes WHERE id = ?", (session["usuario_id"],)).fetchone()
+            finally:
+                con.close()
+            if usuario is None or usuario["tipo"] not in tipos_permitidos:
                 if request.method == "GET" and request.path == "/cozinheiro":
                     flash("Sua conta não tem permissão para acessar a cozinha.", "erro")
                     return redirect(url_for("cliente.pagina_login"))

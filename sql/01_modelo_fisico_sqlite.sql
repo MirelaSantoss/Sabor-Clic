@@ -1,0 +1,4 @@
+-- SQLite: esquema utilizado pelo Flask. Execute via app.db.criar_tabelas().
+-- Inclui clientes, enderecos, pratos, pedidos, pedido_itens,
+-- cadastros_pendentes, historico_status e estoque_pratos.
+-- A inicializacao cria tabelas e realiza migracoes em bancos antigos.

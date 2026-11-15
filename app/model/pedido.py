@@ -111,6 +111,19 @@ class Pedido:
 
         return alterados
     @staticmethod
+    def definir_tempo(id_pedido, minutos):
+        conexao = conectar()
+        try:
+            cursor = conexao.execute(
+                "UPDATE pedidos SET tempo_estimado = ? WHERE id = ?",
+                (minutos, id_pedido)
+            )
+            conexao.commit()
+            return cursor.rowcount
+        finally:
+            conexao.close()
+
+    @staticmethod
     def itens_do_pedido(pedido_id):
         conexao = conectar()
         try:

@@ -1,3 +1,5 @@
+import sqlite3
+
 from flask import (
     Blueprint, jsonify, render_template,
     request, session
@@ -48,7 +50,7 @@ def criar_pedido():
             "pedido_id": pedido_id
         }), 201
 
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError, KeyError, sqlite3.IntegrityError):
         return jsonify({
             "erro": "Os itens ou as quantidades são inválidos."
         }), 400
@@ -108,3 +110,17 @@ def atualizar_status(id):
 def pagina_cozinheiro():
 
     return render_template("kds.html")
+
+@pedido_bp.route("/pedidos/<int:id>/tempo", methods=["PUT"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def definir_tempo_preparo(id):
+    dados = request.get_json(silent=True) or {}
+    try:
+        minutos = int(dados.get("minutos"))
+        if minutos < 1 or minutos > 480:
+            raise ValueError()
+    except (TypeError, ValueError):
+        return jsonify({"erro": "Informe um tempo entre 1 e 480 minutos."}), 400
+    if not Pedido.definir_tempo(id, minutos):
+        return jsonify({"erro": "Pedido não encontrado."}), 404
+    return jsonify({"mensagem": "Tempo estimado atualizado.", "tempo_estimado": minutos})

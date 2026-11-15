@@ -80,3 +80,52 @@ def relatorio():
     resumo["funcionarios"] = [dict(x) for x in con.execute("SELECT id,nome,email,tipo FROM clientes WHERE tipo IN ('administrador','cozinheiro')")]
     con.close()
     return jsonify(resumo)
+
+
+@admin_bp.route("/api/admin/funcionarios", methods=["POST"])
+@permissao_obrigatoria("administrador")
+def cadastrar_funcionario():
+    from werkzeug.security import generate_password_hash
+    from secrets import token_hex
+    import sqlite3
+    dados = request.get_json(silent=True) or {}
+    nome = str(dados.get("nome", "")).strip()
+    email = str(dados.get("email", "")).strip().lower()
+    senha = str(dados.get("senha", ""))
+    tipo = dados.get("tipo")
+    turno = str(dados.get("turno", "")).strip()
+    especialidade = str(dados.get("especialidade", "")).strip()
+    if not nome or "@" not in email or len(senha) < 8 or tipo not in ("cozinheiro", "administrador"):
+        return jsonify({"erro": "Confira nome, e-mail, senha (8+ caracteres) e função."}), 400
+    con = conectar()
+    try:
+        con.execute("""INSERT INTO clientes
+            (nome, telefone, cpf, data_nascimento, email, senha, tipo, turno, especialidade)
+            VALUES (?, '', ?, '', ?, ?, ?, ?, ?)""",
+            (nome, 'FUNC-'+token_hex(12), email, generate_password_hash(senha), tipo, turno, especialidade))
+        con.commit()
+        return jsonify({"mensagem": "Funcionário cadastrado com sucesso."}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"erro": "E-mail já cadastrado."}), 409
+    finally:
+        con.close()
+
+@admin_bp.route("/api/admin/estoque/<int:prato_id>", methods=["PUT"])
+@permissao_obrigatoria("administrador")
+def definir_estoque(prato_id):
+    dados = request.get_json(silent=True) or {}
+    try:
+        quantidade = int(dados.get("quantidade"))
+        if quantidade < 0: raise ValueError()
+    except (ValueError, TypeError):
+        return jsonify({"erro": "Quantidade inválida."}), 400
+    con = conectar()
+    try:
+        if not con.execute("SELECT id FROM pratos WHERE id=?", (prato_id,)).fetchone():
+            return jsonify({"erro": "Prato não encontrado."}), 404
+        con.execute("""INSERT INTO estoque_pratos(prato_id,quantidade) VALUES (?,?)
+            ON CONFLICT(prato_id) DO UPDATE SET quantidade=excluded.quantidade""", (prato_id, quantidade))
+        con.commit()
+        return jsonify({"mensagem": "Estoque atualizado."})
+    finally:
+        con.close()

@@ -3,15 +3,17 @@ import os
 
 # Caminho do banco de dados
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "sabor_clic.db")
+DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE_DIR, "sabor_clic.db"))
+os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
 
 
 def conectar():
     """Cria e retorna uma conexão com o banco de dados."""
 
-    conexao = sqlite3.connect(DB_PATH)
+    conexao = sqlite3.connect(DB_PATH, timeout=20)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
+    conexao.execute("PRAGMA busy_timeout = 20000")
 
     return conexao
 
@@ -90,6 +92,14 @@ def criar_tabelas():
     """)
 
     # Migração simples: preserva os bancos de versões anteriores.
+    colunas_pedidos = {linha[1] for linha in cursor.execute("PRAGMA table_info(pedidos)")}
+    if "tempo_estimado" not in colunas_pedidos:
+        cursor.execute("ALTER TABLE pedidos ADD COLUMN tempo_estimado INTEGER")
+    colunas_clientes = {linha[1] for linha in cursor.execute("PRAGMA table_info(clientes)")}
+    for nome, tipo in (("turno", "TEXT"), ("especialidade", "TEXT")):
+        if nome not in colunas_clientes:
+            cursor.execute(f"ALTER TABLE clientes ADD COLUMN {nome} {tipo}")
+
     colunas = {linha[1] for linha in cursor.execute("PRAGMA table_info(pratos)")}
     for nome, tipo in (("categoria", "TEXT NOT NULL DEFAULT 'Pratos'"), ("imagem", "TEXT")):
         if nome not in colunas:
@@ -109,6 +119,29 @@ def criar_tabelas():
             VALUES (NEW.id, NEW.status);
         END;
     """)
+
+    # Estoque simplificado por prato e trigger de baixa automática.
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS estoque_pratos (
+            prato_id INTEGER PRIMARY KEY REFERENCES pratos(id),
+            quantidade INTEGER NOT NULL CHECK (quantidade >= 0)
+        );
+        CREATE TRIGGER IF NOT EXISTS conferir_estoque_antes_pedido
+        BEFORE INSERT ON pedido_itens
+        WHEN EXISTS (SELECT 1 FROM estoque_pratos WHERE prato_id = NEW.prato_id)
+        BEGIN
+            SELECT CASE WHEN
+                (SELECT quantidade FROM estoque_pratos WHERE prato_id = NEW.prato_id) < NEW.quantidade
+                THEN RAISE(ABORT, 'Estoque insuficiente') END;
+        END;
+        CREATE TRIGGER IF NOT EXISTS baixar_estoque_pedido
+        AFTER INSERT ON pedido_itens
+        BEGIN
+            UPDATE estoque_pratos SET quantidade = quantidade - NEW.quantidade
+            WHERE prato_id = NEW.prato_id;
+        END;
+    """)
+    # Sem registro de estoque, o produto é tratado como sem controle de quantidade.
 
     # Cardápio inicial de demonstração (sem duplicar os pratos ao reiniciar).
     cursor.execute("SELECT COUNT(*) FROM pratos")

@@ -31,7 +31,7 @@ def create_app():
 
     # False permite utilizar cookies em HTTP durante o desenvolvimento local.
     # Em produção, utilize HTTPS e altere para True.
-    app.config["SESSION_COOKIE_SECURE"] = False
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE", "0") == "1"
 
     # Tempo de duração da sessão.
     app.config["PERMANENT_SESSION_LIFETIME"] = 1800

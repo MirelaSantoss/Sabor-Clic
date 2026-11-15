@@ -1,4 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
-sabor_clic.db
+*.db
+*.sqlite3
+.env
+instance/

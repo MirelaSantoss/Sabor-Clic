@@ -29,3 +29,13 @@ document.getElementById('form-produto').addEventListener('submit',async e=>{
  e.preventDefault();const form=e.currentTarget;
  try{const r=await fetch('/api/admin/pratos',{method:'POST',body:new FormData(form)});const dados=await r.json();if(!r.ok)throw new Error(dados.erro);mensagem.textContent=dados.mensagem;form.reset();await atualizarAdmin();}catch(erro){mensagem.textContent=erro.message;}
 });atualizarAdmin();
+document.getElementById('form-funcionario').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget;
+ const dados=Object.fromEntries(new FormData(form));
+ const mensagem=document.getElementById('mensagem-funcionario');
+ try{
+  const r=await fetch('/api/admin/funcionarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});
+  const resposta=await r.json();if(!r.ok)throw Error(resposta.erro||'Erro ao cadastrar');
+  mensagem.textContent=resposta.mensagem;form.reset();await atualizarAdmin();
+ }catch(erro){mensagem.textContent=erro.message}
+});

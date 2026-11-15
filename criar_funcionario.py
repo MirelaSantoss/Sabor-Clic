@@ -15,6 +15,14 @@ senha = getpass("Senha (mínimo 8 caracteres): ")
 if not nome or "@" not in email or len(senha) < 8:
     raise SystemExit("Confira nome, e-mail e senha")
 con = conectar()
+usuarios = con.execute(
+    "SELECT id, nome, email, tipo FROM clientes"
+).fetchall()
+
+print("USUÁRIOS CADASTRADOS:")
+
+for usuario in usuarios:
+    print(dict(usuario))
 try:
     con.execute("""INSERT INTO clientes (nome, telefone, cpf, data_nascimento, email, senha, tipo)
                    VALUES (?, '', ?, '', ?, ?, ?)""",

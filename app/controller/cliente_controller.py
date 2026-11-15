@@ -20,12 +20,12 @@ clientes_bp = Blueprint("cliente", __name__)
 @clientes_bp.route("/login", methods=["GET", "POST"])
 def pagina_login():
 
+    modo = request.form.get("modo", "cliente")
+
     if request.method == "POST":
 
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
-
-        modo = request.form.get("modo", "cliente")
 
         if modo not in ("cliente", "cozinheiro", "administrador"):
             flash("Tipo de acesso inválido.", "erro")
@@ -53,7 +53,10 @@ def pagina_login():
 
         flash("E-mail, senha ou tipo de acesso inválidos.", "erro")
 
-    return render_template("login.html", modo="cliente")
+    else:
+        modo = request.args.get("modo", "cliente")
+
+    return render_template("login.html", modo=modo)
 
 
 # ==================================================
