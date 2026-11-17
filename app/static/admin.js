@@ -238,7 +238,7 @@ function renderizarListaProdutosAdmin() {
             img.alt = prato.nome;
             miniatura.append(img);
         } else {
-            miniatura.textContent = "🍽";
+            miniatura.append(Icones.criar("utensils", "icone-svg-lg"));
         }
 
         const blocoInfo = document.createElement("div");
@@ -673,7 +673,12 @@ function verificarColisaoNoModalAdmin() {
     }
 
     if (fim <= inicio) {
-        avisoConflitoModalAdmin.textContent = "⚠️ O horário final deve ser posterior ao horário inicial.";
+        avisoConflitoModalAdmin.className = "aviso erro icone-inline";
+        Icones.preencher(
+            avisoConflitoModalAdmin,
+            "alert",
+            "O horário final deve ser posterior ao horário inicial."
+        );
         return;
     }
 
@@ -686,9 +691,19 @@ function verificarColisaoNoModalAdmin() {
     );
 
     if (conflito) {
-        avisoConflitoModalAdmin.textContent = `⚠️ Colisão detectada: choca com a Reserva #${conflito.id_reserva} (${conflito.data_hora_inicio} até ${conflito.data_hora_fim}).`;
+        avisoConflitoModalAdmin.className = "aviso erro icone-inline";
+        Icones.preencher(
+            avisoConflitoModalAdmin,
+            "alert",
+            `Colisão detectada: choca com a Reserva #${conflito.id_reserva} (${conflito.data_hora_inicio} até ${conflito.data_hora_fim}).`
+        );
     } else {
-        avisoConflitoModalAdmin.textContent = "✅ Horário livre nesta bancada (sem colisão).";
+        avisoConflitoModalAdmin.className = "aviso icone-inline";
+        Icones.preencher(
+            avisoConflitoModalAdmin,
+            "check",
+            "Horário livre nesta bancada (sem colisão)."
+        );
     }
 }
 

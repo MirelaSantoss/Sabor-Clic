@@ -84,7 +84,7 @@ async function mostrarPedidos() {
                 const iconeTimer = document.createElement("span");
                 iconeTimer.className = "kds-icone-timer-card";
                 iconeTimer.setAttribute("aria-hidden", "true");
-                iconeTimer.textContent = "⏲";
+                iconeTimer.append(Icones.criar("clock"));
 
                 const badgeTempo = document.createElement("span");
                 badgeTempo.className = "pedido-kds-tempo";
@@ -129,7 +129,7 @@ async function mostrarPedidos() {
 
                 const iconeNota = document.createElement("span");
                 iconeNota.setAttribute("aria-hidden", "true");
-                iconeNota.textContent = "📝";
+                iconeNota.append(Icones.criar("note"));
 
                 const textoObs = document.createElement("span");
                 textoObs.textContent = pedido.observacoes
@@ -158,7 +158,7 @@ async function mostrarPedidos() {
                     } else if (statusColuna === "Iniciando Preparo") {
                         botaoAvancar.textContent = "Pronto p/ entrega →";
                     } else {
-                        botaoAvancar.textContent = "Concluir entrega ✓";
+                        Icones.preencher(botaoAvancar, "check", "Concluir entrega");
                     }
                     botaoAvancar.onclick = () => alterarStatusDireto(pedido.id, pedido.proximoStatus);
                     acoes.append(botaoAvancar);

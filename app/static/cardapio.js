@@ -81,8 +81,11 @@ function renderizarCardapio() {
             titulo.textContent = prato.nome;
 
             const tempoTag = document.createElement("small");
-            tempoTag.className = "tag-tempo-cardapio";
-            tempoTag.textContent = `⏱ ~${prato.tempoPreparoMin} min`;
+            tempoTag.className = "tag-tempo-cardapio icone-inline";
+            tempoTag.append(
+                Icones.criar("clock", "icone-svg-sm"),
+                document.createTextNode(`~${prato.tempoPreparoMin} min`)
+            );
 
             cabecalhoItem.append(titulo, tempoTag);
 
@@ -127,7 +130,7 @@ function renderizarCardapio() {
             } else {
                 const placeholder = document.createElement("div");
                 placeholder.className = "foto-vazia-horizontal";
-                placeholder.textContent = "🍽";
+                placeholder.append(Icones.criar("utensils", "icone-svg-xl"));
                 colunaFoto.append(placeholder);
             }
 
@@ -164,9 +167,7 @@ function abrirDetalhes(prato) {
         img.alt = prato.nome;
         caixaFoto.append(img);
     } else {
-        const icone = document.createElement("span");
-        icone.textContent = "🍽";
-        caixaFoto.append(icone);
+        caixaFoto.append(Icones.criar("utensils", "icone-svg-xl"));
     }
 
     const caixaTexto = document.createElement("div");
@@ -218,7 +219,11 @@ function abrirDetalhes(prato) {
     const atualizarTextoBotao = () => {
         spanValorQtd.textContent = String(qtdAtual);
         const subtotal = prato.preco * qtdAtual;
-        botaoAdicionar.textContent = `🛒 Adicionar ao carrinho: ${Prato.formatarMoeda(subtotal)}`;
+        Icones.preencher(
+            botaoAdicionar,
+            "cart",
+            `Adicionar ao carrinho: ${Prato.formatarMoeda(subtotal)}`
+        );
     };
 
     const btnMenos = document.createElement("button");

@@ -45,7 +45,7 @@ function mostrarCarrinho() {
             img.alt = item.nome;
             fotoBox.append(img);
         } else {
-            fotoBox.textContent = "🍽";
+            fotoBox.append(Icones.criar("utensils", "icone-svg-lg"));
         }
 
         const infoContainer = document.createElement("div");

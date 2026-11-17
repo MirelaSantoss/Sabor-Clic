@@ -8,7 +8,9 @@
     <div id="carrinho" class="lista-carrinho-figma"></div>
 
     <div class="bloco-adicionar-item-carrinho">
-        <a class="botao-secundario botao-adicionar-item-figma" href="{{ url_for('prato.pagina_cardapio') }}">➕ Adicionar Item</a>
+        <a class="botao-secundario botao-adicionar-item-figma" href="{{ url_for('prato.pagina_cardapio') }}">
+            <svg class="icone-svg" aria-hidden="true"><use href="#ico-plus"></use></svg> Adicionar Item
+        </a>
     </div>
 
     <footer class="barra-rodape-carrinho">

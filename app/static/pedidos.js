@@ -61,8 +61,11 @@ async function carregarPedidosCliente() {
 
             if (pedido.observacoes) {
                 const paragrafoObs = document.createElement("div");
-                paragrafoObs.className = "pedido-kds-obs";
-                paragrafoObs.textContent = `📝 Observações: ${pedido.observacoes}`;
+                paragrafoObs.className = "pedido-kds-obs icone-inline";
+                paragrafoObs.append(
+                    Icones.criar("note", "icone-svg-sm"),
+                    document.createTextNode(`Observações: ${pedido.observacoes}`)
+                );
                 bloco.append(paragrafoObs);
             }
 

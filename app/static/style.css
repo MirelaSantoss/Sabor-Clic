@@ -28,6 +28,43 @@
     box-sizing: border-box;
 }
 
+.sprite-oculto {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.icone-svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.icone-svg-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icone-svg-lg {
+    width: 32px;
+    height: 32px;
+}
+
+.icone-svg-xl {
+    width: 44px;
+    height: 44px;
+}
+
+.icone-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+}
+
 html {
     scroll-behavior: smooth;
 }

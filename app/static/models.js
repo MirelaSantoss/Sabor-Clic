@@ -477,6 +477,27 @@ class Bancada {
     }
 }
 
+class Icones {
+    static criar(nome, classeExtra = "") {
+        const ns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("class", classeExtra ? `icone-svg ${classeExtra}` : "icone-svg");
+        svg.setAttribute("aria-hidden", "true");
+        const uso = document.createElementNS(ns, "use");
+        uso.setAttribute("href", `#ico-${nome}`);
+        svg.appendChild(uso);
+        return svg;
+    }
+
+    static preencher(elemento, nomeIcone, texto, classeExtra = "") {
+        const span = document.createElement("span");
+        span.textContent = texto;
+        elemento.replaceChildren(Icones.criar(nomeIcone, classeExtra), span);
+        return elemento;
+    }
+}
+
+window.Icones = Icones;
 window.Usuario = Usuario;
 window.Prato = Prato;
 window.Produto = Prato;

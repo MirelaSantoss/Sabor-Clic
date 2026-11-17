@@ -60,8 +60,12 @@ function atualizarPreviaEColisao() {
     const horas = (dtFim - dtIni) / 3600000;
 
     if (Number.isNaN(horas) || horas < 1) {
-        previaReservaParceiro.className = "aviso erro";
-        previaReservaParceiro.textContent = "⚠️ O período mínimo de locação é de 1 hora (fim posterior ao início).";
+        previaReservaParceiro.className = "aviso erro icone-inline";
+        Icones.preencher(
+            previaReservaParceiro,
+            "alert",
+            "O período mínimo de locação é de 1 hora (fim posterior ao início)."
+        );
         if (btnConfirmarReserva) {
             btnConfirmarReserva.disabled = true;
         }
@@ -76,8 +80,12 @@ function atualizarPreviaEColisao() {
     );
 
     if (conflito) {
-        previaReservaParceiro.className = "aviso erro";
-        previaReservaParceiro.textContent = `⚠️ Horário indisponível! ${bancada.codigo} já está reservada das ${conflito.data_hora_inicio} até ${conflito.data_hora_fim}.`;
+        previaReservaParceiro.className = "aviso erro icone-inline";
+        Icones.preencher(
+            previaReservaParceiro,
+            "alert",
+            `Horário indisponível! ${bancada.codigo} já está reservada das ${conflito.data_hora_inicio} até ${conflito.data_hora_fim}.`
+        );
         if (btnConfirmarReserva) {
             btnConfirmarReserva.disabled = true;
         }
@@ -86,8 +94,12 @@ function atualizarPreviaEColisao() {
 
     const valorHoras = horas * bancada.valorHora;
     const totalComCaucao = valorHoras + bancada.valorCaucao;
-    previaReservaParceiro.className = "aviso";
-    previaReservaParceiro.textContent = `✅ Horário livre! Duração: ${horas.toFixed(1)}h · Valor horas: ${Prato.formatarMoeda(valorHoras)} · Caução: ${bancada.valorCaucaoFormatado} · Total c/ caução: ${Prato.formatarMoeda(totalComCaucao)}`;
+    previaReservaParceiro.className = "aviso icone-inline";
+    Icones.preencher(
+        previaReservaParceiro,
+        "check",
+        `Horário livre! Duração: ${horas.toFixed(1)}h · Valor horas: ${Prato.formatarMoeda(valorHoras)} · Caução: ${bancada.valorCaucaoFormatado} · Total c/ caução: ${Prato.formatarMoeda(totalComCaucao)}`
+    );
     if (btnConfirmarReserva) {
         btnConfirmarReserva.disabled = false;
     }
