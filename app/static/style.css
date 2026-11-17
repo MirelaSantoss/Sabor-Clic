@@ -419,6 +419,187 @@ small {
     margin: 24px 0;
 }
 
+.abas-admin {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 24px 0 16px;
+    border-bottom: 2px solid var(--marrom);
+    padding-bottom: 16px;
+}
+
+.aba-btn {
+    min-height: 48px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 2px solid var(--marrom);
+    background: var(--branco);
+    color: var(--marrom);
+    font-weight: 700;
+}
+
+.aba-btn.ativa {
+    background: var(--marrom);
+    color: var(--branco);
+}
+
+.aba-conteudo {
+    display: none;
+}
+
+.aba-conteudo.ativa {
+    display: block;
+}
+
+.grade-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0 24px;
+}
+
+.card-kpi {
+    background: var(--branco);
+    border-left: 6px solid var(--vermelho);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(58, 33, 21, 0.1);
+    display: grid;
+    gap: 8px;
+}
+
+.card-kpi small {
+    font-weight: 700;
+    color: var(--marrom);
+}
+
+.card-kpi strong {
+    font-size: 24px;
+    color: var(--preto);
+}
+
+.badge-alerta {
+    background: var(--laranja);
+    color: var(--preto);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.badge-normal {
+    background: var(--amarelo);
+    color: var(--preto);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.filtros-admin {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.filtros-admin input,
+.filtros-admin select {
+    padding: 12px;
+    border: 1px solid var(--marrom);
+    border-radius: 8px;
+    background: var(--branco);
+}
+
+.card-prato-admin {
+    display: grid;
+    grid-template-columns: 64px 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.miniatura-admin {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    background: var(--creme);
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    overflow: hidden;
+}
+
+.miniatura-admin img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-prato-admin {
+    display: grid;
+    gap: 4px;
+}
+
+.info-prato-admin p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.controle-estoque-admin,
+.acoes-item-admin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.modal-admin {
+    border: 0;
+    border-radius: 8px;
+    padding: 0;
+    width: min(600px, 94vw);
+    background: transparent;
+}
+
+.modal-admin::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.grade-campos-dupla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.grade-campos-tripla {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+}
+
+.preview-imagem-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.preview-imagem-box img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.checkbox-linha {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-linha input {
+    width: auto !important;
+}
+
 .lista {
     display: grid;
     gap: 16px;

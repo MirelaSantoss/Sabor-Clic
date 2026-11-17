@@ -6,6 +6,21 @@
     <h2 id="subtotal">Subtotal: R$ 0,00</h2>
     <button id="finalizar" class="botao" type="button">Finalizar pedido</button>
     <p><a class="botao-secundario" href="{{ url_for('prato.pagina_cardapio') }}">Voltar ao cardápio</a></p>
-    <script src="{{ url_for('static', filename='carrinho.js') }}"></script>
 </section>
+
+<dialog id="modal-obs-carrinho" class="modal-admin">
+    <form id="form-obs-carrinho" class="form-card">
+        <h2 id="titulo-obs-carrinho">Editar Observações do Item</h2>
+        <input type="hidden" id="indice-obs-carrinho">
+        <label>Observações especiais para o preparo
+            <textarea id="texto-obs-carrinho" maxlength="255" placeholder="Ex.: sem cebola, ponto da carne..."></textarea>
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar observação</button>
+            <button type="button" id="fechar-obs-carrinho" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="{{ url_for('static', filename='carrinho.js') }}"></script>
 {% endblock %}

@@ -314,6 +314,15 @@ class Carrinho {
         this.salvar();
     }
 
+    atualizarObservacoes(indice, observacoes) {
+        const item = this.#itens[indice];
+        if (!item) {
+            return;
+        }
+        item.observacoes = observacoes;
+        this.salvar();
+    }
+
     remover(indice) {
         this.#itens = this.#itens.filter((_item, idx) => idx !== indice);
         this.salvar();

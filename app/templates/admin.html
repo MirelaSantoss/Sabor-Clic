@@ -1,80 +1,471 @@
 {% extends "index.html" %}
 {% block conteudo %}
 <section class="pagina">
-    <h1>Painel administrativo</h1>
-    <p>Gerencie produtos do cardápio, bancadas gastronômicas, funcionários e vendas.</p>
-    <div class="painel-duplo">
-        <section class="form-card">
-            <h2>Cadastrar produto</h2>
-            <form id="form-produto" enctype="multipart/form-data">
-                <label>Nome (3 a 120 caracteres)
-                    <input name="nome" minlength="3" maxlength="120" required>
-                </label>
-                <label>Descrição
-                    <textarea name="descricao" required></textarea>
-                </label>
-                <label>Categoria
-                    <select name="categoria">
-                        <option>Pratos</option>
-                        <option>Bebidas</option>
-                        <option>Combos</option>
-                        <option>Sobremesas</option>
-                    </select>
-                </label>
-                <label>Preço (R$)
-                    <input name="preco" type="number" step="0.01" min="0.01" required>
-                </label>
-                <label>Foto do produto
-                    <input name="imagem" type="file" accept="image/png,image/jpeg,image/webp">
-                </label>
-                <button class="botao" type="submit">Cadastrar prato</button>
-            </form>
-            <p id="mensagem-admin" role="status"></p>
+    <h1>Painel Administrativo</h1>
+    <p>Central integrada de gestão de cardápio, estoque, bancadas gastronômicas, pedidos e equipe.</p>
+
+    <nav class="abas-admin" aria-label="Seções do painel administrativo">
+        <button type="button" class="aba-btn ativa" data-aba="aba-visao-geral">Visão Geral &amp; Relatórios</button>
+        <button type="button" class="aba-btn" data-aba="aba-cardapio">Cardápio &amp; Estoque</button>
+        <button type="button" class="aba-btn" data-aba="aba-bancadas">Bancadas &amp; Reservas</button>
+        <button type="button" class="aba-btn" data-aba="aba-pedidos">Pedidos &amp; Auditoria</button>
+        <button type="button" class="aba-btn" data-aba="aba-equipe">Equipe &amp; Clientes</button>
+    </nav>
+
+    <p id="mensagem-admin" role="status"></p>
+
+    <div id="aba-visao-geral" class="aba-conteudo ativa">
+        <section class="grade-kpis" id="resumo-admin">
+            <article class="card-kpi">
+                <small>Pedidos Realizados</small>
+                <strong id="kpi-pedidos">0</strong>
+            </article>
+            <article class="card-kpi">
+                <small>Faturamento Delivery</small>
+                <strong id="kpi-faturamento-delivery">R$ 0,00</strong>
+            </article>
+            <article class="card-kpi">
+                <small>Ticket Médio</small>
+                <strong id="kpi-ticket-medio">R$ 0,00</strong>
+            </article>
+            <article class="card-kpi">
+                <small>Receita de Bancadas</small>
+                <strong id="kpi-receita-bancadas">R$ 0,00</strong>
+            </article>
+            <article class="card-kpi">
+                <small>Receita Global</small>
+                <strong id="kpi-faturamento-global">R$ 0,00</strong>
+            </article>
+            <article class="card-kpi">
+                <small>Alertas de Estoque</small>
+                <strong id="kpi-alertas-estoque">0</strong>
+            </article>
         </section>
+
+        <div class="painel-duplo">
+            <section class="form-card">
+                <h2>Ranking de Pratos Mais Vendidos</h2>
+                <div id="ranking-pratos-admin" class="lista"></div>
+            </section>
+            <section class="form-card">
+                <h2>Produtividade e Receita por Bancada</h2>
+                <div id="produtividade-bancadas-admin" class="lista"></div>
+            </section>
+        </div>
+
+        <div class="painel-duplo">
+            <section class="form-card">
+                <h2>Alertas de Reposição de Estoque (≤ 10 un.)</h2>
+                <div id="lista-alertas-estoque-admin" class="lista"></div>
+            </section>
+            <section class="form-card">
+                <h2>Distribuição de Pedidos por Status</h2>
+                <div id="status-pedidos-admin" class="lista"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="aba-cardapio" class="aba-conteudo">
+        <div class="painel-duplo">
+            <section class="form-card">
+                <h2>Cadastrar produto</h2>
+                <form id="form-produto" enctype="multipart/form-data">
+                    <label>Nome (3 a 120 caracteres)
+                        <input name="nome" minlength="3" maxlength="120" required>
+                    </label>
+                    <label>Descrição
+                        <textarea name="descricao" required></textarea>
+                    </label>
+                    <label>Categoria
+                        <select name="categoria">
+                            <option>Pratos</option>
+                            <option>Bebidas</option>
+                            <option>Combos</option>
+                            <option>Sobremesas</option>
+                        </select>
+                    </label>
+                    <label>Preço (R$)
+                        <input name="preco" type="number" step="0.01" min="0.01" required>
+                    </label>
+                    <label>Tempo estimado de preparo (minutos)
+                        <input name="tempo_preparo_min" type="number" step="1" min="1" max="480" value="20" required>
+                    </label>
+                    <label>Estoque inicial (unidades)
+                        <input name="estoque" type="number" step="1" min="0" value="50" required>
+                    </label>
+                    <label>Foto do produto
+                        <input name="imagem" type="file" accept="image/png,image/jpeg,image/webp">
+                    </label>
+                    <button class="botao" type="submit">Cadastrar prato</button>
+                </form>
+            </section>
+            <section>
+                <h2>Produtos cadastrados e Controle de Estoque</h2>
+                <div class="filtros-admin">
+                    <input id="busca-prato-admin" type="search" placeholder="Buscar prato por nome ou descrição...">
+                    <select id="filtro-categoria-admin">
+                        <option value="">Todas as categorias</option>
+                        <option value="Pratos">Pratos</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Combos">Combos</option>
+                        <option value="Sobremesas">Sobremesas</option>
+                    </select>
+                    <select id="filtro-status-admin">
+                        <option value="">Todos os status</option>
+                        <option value="ativos">Apenas Ativos</option>
+                        <option value="inativos">Apenas Inativos</option>
+                        <option value="estoque_baixo">Estoque Baixo (≤ 10 un.)</option>
+                    </select>
+                </div>
+                <div id="produtos-admin" class="lista"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="aba-bancadas" class="aba-conteudo">
+        <div class="painel-duplo">
+            <section class="form-card">
+                <h2>Cadastrar nova bancada</h2>
+                <form id="form-nova-bancada">
+                    <label>Código de identificação (ex.: BANCADA-04)
+                        <input name="cod_identificacao" maxlength="20" placeholder="BANCADA-04" required>
+                    </label>
+                    <label>Equipamentos e descrição da estação
+                        <textarea name="descricao" placeholder="Descreva os equipamentos inclusos na bancada..." required></textarea>
+                    </label>
+                    <div class="grade-campos-dupla">
+                        <label>Valor por hora (R$)
+                            <input name="valor_hora" type="number" step="0.01" min="0.01" required>
+                        </label>
+                        <label>Caução de garantia (R$)
+                            <input name="valor_caucao" type="number" step="0.01" min="0" value="250.00" required>
+                        </label>
+                    </div>
+                    <label>Status operacional
+                        <select name="status_operacional">
+                            <option value="DISPONIVEL">DISPONÍVEL</option>
+                            <option value="MANUTENCAO">MANUTENÇÃO</option>
+                            <option value="INATIVA">INATIVA</option>
+                        </select>
+                    </label>
+                    <button class="botao" type="submit">Cadastrar bancada</button>
+                </form>
+            </section>
+            <section>
+                <h2>Estações cadastradas e Disponibilidade</h2>
+                <div id="bancadas-admin" class="lista"></div>
+            </section>
+        </div>
+
         <section>
-            <h2>Produtos cadastrados</h2>
-            <div id="produtos-admin" class="lista"></div>
+            <h2>Agenda de Ocupação e Controle de Reservas (Prevenção de Colisão de Horários)</h2>
+            <div class="filtros-admin">
+                <select id="filtro-reserva-bancada">
+                    <option value="">Todas as bancadas</option>
+                </select>
+                <input type="date" id="filtro-reserva-data">
+                <select id="filtro-reserva-status">
+                    <option value="">Todos os status de reserva</option>
+                    <option value="CONFIRMADA">CONFIRMADA</option>
+                    <option value="SOLICITADA">SOLICITADA</option>
+                    <option value="CONCLUIDA">CONCLUÍDA</option>
+                    <option value="CANCELADA">CANCELADA</option>
+                </select>
+            </div>
+            <div id="reservas-bancadas-admin" class="lista"></div>
         </section>
     </div>
-    <section>
-        <h2>Resumo de vendas</h2>
-        <div id="resumo-admin"></div>
-    </section>
-    <section>
-        <h2>Bancadas gastronômicas (Preço/Hora e Caução)</h2>
-        <div id="bancadas-admin" class="lista"></div>
-    </section>
-    <div class="painel-duplo">
-        <section class="form-card">
-            <h2>Cadastrar funcionário</h2>
-            <form id="form-funcionario">
-                <label>Nome
-                    <input name="nome" required>
-                </label>
-                <label>E-mail
-                    <input name="email" type="email" maxlength="120" required>
-                </label>
-                <label>Telefone / WhatsApp
-                    <input name="telefone" type="text">
-                </label>
-                <label>Senha (mínimo 8 caracteres, letras e números)
-                    <input name="senha" type="password" minlength="8" required>
-                </label>
-                <label>Perfil
-                    <select name="tipo">
-                        <option value="cozinheiro">Cozinheiro</option>
-                        <option value="administrador">Administrador</option>
+
+    <div id="aba-pedidos" class="aba-conteudo">
+        <div class="painel-duplo">
+            <section>
+                <h2>Pedidos registrados e Edição</h2>
+                <div class="filtros-admin">
+                    <select id="filtro-pedido-status-admin">
+                        <option value="">Todos os status</option>
+                        <option value="Aguardando">Aguardando</option>
+                        <option value="Iniciando Preparo">Iniciando Preparo</option>
+                        <option value="Pronto para Entrega">Pronto para Entrega</option>
+                        <option value="Entregue">Entregue</option>
+                        <option value="Cancelado">Cancelado</option>
                     </select>
-                </label>
-                <button class="botao" type="submit">Cadastrar funcionário</button>
-            </form>
-            <p id="mensagem-funcionario" role="status"></p>
-        </section>
+                </div>
+                <div id="pedidos-admin" class="lista"></div>
+            </section>
+            <section class="form-card">
+                <h2>Auditoria de Mudanças de Status (Trigger)</h2>
+                <div id="historico-status-admin" class="lista"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="aba-equipe" class="aba-conteudo">
+        <div class="painel-duplo">
+            <section class="form-card">
+                <h2>Cadastrar funcionário</h2>
+                <form id="form-funcionario">
+                    <label>Nome
+                        <input name="nome" required>
+                    </label>
+                    <label>E-mail
+                        <input name="email" type="email" maxlength="120" required>
+                    </label>
+                    <label>Telefone / WhatsApp
+                        <input name="telefone" type="text">
+                    </label>
+                    <label>Senha (mínimo 8 caracteres, letras e números)
+                        <input name="senha" type="password" minlength="8" required>
+                    </label>
+                    <label>Perfil
+                        <select name="tipo">
+                            <option value="cozinheiro">Cozinheiro</option>
+                            <option value="administrador">Administrador</option>
+                        </select>
+                    </label>
+                    <button class="botao" type="submit">Cadastrar funcionário</button>
+                </form>
+                <p id="mensagem-funcionario" role="status"></p>
+            </section>
+            <section>
+                <h2>Funcionários cadastrados</h2>
+                <div id="funcionarios-admin" class="lista"></div>
+            </section>
+        </div>
+
         <section>
-            <h2>Funcionários cadastrados</h2>
-            <div id="funcionarios-admin" class="lista"></div>
+            <h2>Clientes e Parceiros Cadastrados</h2>
+            <div id="clientes-admin" class="lista"></div>
         </section>
     </div>
 </section>
+
+<dialog id="modal-editar-prato" class="modal-admin">
+    <form id="form-editar-prato" class="form-card" enctype="multipart/form-data">
+        <h2>Editar Produto e Estoque</h2>
+        <input type="hidden" name="id" id="edit-prato-id">
+        <label>Nome do prato (3 a 120 caracteres)
+            <input type="text" name="nome" id="edit-prato-nome" minlength="3" maxlength="120" required>
+        </label>
+        <label>Descrição
+            <textarea name="descricao" id="edit-prato-descricao" required></textarea>
+        </label>
+        <div class="grade-campos-dupla">
+            <label>Categoria
+                <select name="categoria" id="edit-prato-categoria">
+                    <option value="Pratos">Pratos</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Combos">Combos</option>
+                    <option value="Sobremesas">Sobremesas</option>
+                </select>
+            </label>
+            <label>Status no cardápio
+                <select name="ativo" id="edit-prato-ativo">
+                    <option value="1">Ativo (Visível)</option>
+                    <option value="0">Inativo (Pausado)</option>
+                </select>
+            </label>
+        </div>
+        <div class="grade-campos-tripla">
+            <label>Preço de venda (R$)
+                <input type="number" name="preco" id="edit-prato-preco" step="0.01" min="0.01" required>
+            </label>
+            <label>Preparo (min)
+                <input type="number" name="tempo_preparo_min" id="edit-prato-tempo" step="1" min="1" max="480" required>
+            </label>
+            <label>Estoque (un.)
+                <input type="number" name="estoque" id="edit-prato-estoque" step="1" min="0" required>
+            </label>
+        </div>
+        <div id="edit-prato-preview-box" class="preview-imagem-box"></div>
+        <label>Substituir foto (opcional)
+            <input type="file" name="imagem" id="edit-prato-imagem" accept="image/png,image/jpeg,image/webp">
+        </label>
+        <label class="checkbox-linha">
+            <input type="checkbox" name="remover_imagem" id="edit-prato-remover-imagem" value="1">
+            Remover foto atual do prato
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar alterações</button>
+            <button type="button" id="fechar-modal-prato" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="modal-editar-bancada" class="modal-admin">
+    <form id="form-editar-bancada" class="form-card">
+        <h2>Editar Bancada Gastronômica</h2>
+        <input type="hidden" name="id" id="edit-bancada-id">
+        <label>Código de identificação
+            <input type="text" name="cod_identificacao" id="edit-bancada-codigo" maxlength="20" required>
+        </label>
+        <label>Equipamentos e descrição
+            <textarea name="descricao" id="edit-bancada-descricao" required></textarea>
+        </label>
+        <div class="grade-campos-dupla">
+            <label>Valor por hora (R$)
+                <input type="number" name="valor_hora" id="edit-bancada-hora" step="0.01" min="0.01" required>
+            </label>
+            <label>Valor de caução (R$)
+                <input type="number" name="valor_caucao" id="edit-bancada-caucao" step="0.01" min="0" required>
+            </label>
+        </div>
+        <label>Status operacional
+            <select name="status_operacional" id="edit-bancada-status">
+                <option value="DISPONIVEL">DISPONÍVEL</option>
+                <option value="MANUTENCAO">MANUTENÇÃO</option>
+                <option value="INATIVA">INATIVA</option>
+            </select>
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar bancada</button>
+            <button type="button" id="fechar-modal-bancada" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="modal-editar-reserva" class="modal-admin">
+    <form id="form-editar-reserva" class="form-card">
+        <h2>Editar Reserva de Bancada</h2>
+        <input type="hidden" name="id_reserva" id="edit-reserva-id">
+        <p id="edit-reserva-cliente-info"></p>
+        <label>Bancada alocada
+            <select name="bancada_id" id="edit-reserva-bancada" required></select>
+        </label>
+        <div class="grade-campos-dupla">
+            <label>Início da reserva
+                <input type="datetime-local" name="data_hora_inicio" id="edit-reserva-inicio" required>
+            </label>
+            <label>Fim da reserva
+                <input type="datetime-local" name="data_hora_fim" id="edit-reserva-fim" required>
+            </label>
+        </div>
+        <div class="grade-campos-dupla">
+            <label>Status da reserva
+                <select name="status_reserva" id="edit-reserva-status">
+                    <option value="SOLICITADA">SOLICITADA</option>
+                    <option value="CONFIRMADA">CONFIRMADA</option>
+                    <option value="CONCLUIDA">CONCLUÍDA</option>
+                    <option value="CANCELADA">CANCELADA</option>
+                </select>
+            </label>
+            <label>Adicionais por atraso / avaria (R$)
+                <input type="number" name="valor_adicionais" id="edit-reserva-adicionais" step="0.01" min="0" value="0.00" required>
+            </label>
+        </div>
+        <p id="aviso-conflito-modal-admin" role="status"></p>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar reserva</button>
+            <button type="button" id="fechar-modal-reserva" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="modal-editar-pedido" class="modal-admin">
+    <form id="form-editar-pedido" class="form-card">
+        <h2>Editar Pedido</h2>
+        <input type="hidden" name="id" id="edit-pedido-id">
+        <p id="edit-pedido-resumo"></p>
+        <div class="grade-campos-dupla">
+            <label>Status do pedido
+                <select name="status" id="edit-pedido-status" required>
+                    <option value="Aguardando">Aguardando</option>
+                    <option value="Iniciando Preparo">Iniciando Preparo</option>
+                    <option value="Pronto para Entrega">Pronto para Entrega</option>
+                    <option value="Entregue">Entregue</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </label>
+            <label>Tempo estimado (minutos)
+                <input type="number" name="tempo_estimado" id="edit-pedido-tempo" min="1" max="480" required>
+            </label>
+        </div>
+        <label>Observações do pedido
+            <textarea name="observacoes" id="edit-pedido-observacoes" maxlength="255"></textarea>
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar pedido</button>
+            <button type="button" id="fechar-modal-pedido" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="modal-editar-funcionario" class="modal-admin">
+    <form id="form-editar-funcionario" class="form-card">
+        <h2>Editar Funcionário</h2>
+        <input type="hidden" name="id" id="edit-func-id">
+        <label>Nome completo
+            <input type="text" name="nome" id="edit-func-nome" required>
+        </label>
+        <div class="grade-campos-dupla">
+            <label>E-mail
+                <input type="email" name="email" id="edit-func-email" maxlength="120" required>
+            </label>
+            <label>Telefone / WhatsApp
+                <input type="text" name="telefone" id="edit-func-telefone">
+            </label>
+        </div>
+        <div class="grade-campos-dupla">
+            <label>Perfil de acesso
+                <select name="tipo" id="edit-func-tipo">
+                    <option value="cozinheiro">Cozinheiro</option>
+                    <option value="administrador">Administrador</option>
+                </select>
+            </label>
+            <label>Nova senha (deixe em branco para manter)
+                <input type="password" name="nova_senha" id="edit-func-senha" minlength="8" placeholder="Opcional (mín. 8 chars)">
+            </label>
+        </div>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar funcionário</button>
+            <button type="button" id="fechar-modal-funcionario" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="modal-editar-cliente" class="modal-admin">
+    <form id="form-editar-cliente" class="form-card">
+        <h2>Editar Cliente / Parceiro</h2>
+        <input type="hidden" name="id" id="edit-cli-id">
+        <label>Nome completo
+            <input type="text" name="nome" id="edit-cli-nome" required>
+        </label>
+        <div class="grade-campos-tripla">
+            <label>E-mail
+                <input type="email" name="email" id="edit-cli-email" maxlength="120" required>
+            </label>
+            <label>Telefone
+                <input type="text" name="telefone" id="edit-cli-telefone">
+            </label>
+            <label>CPF
+                <input type="text" name="cpf" id="edit-cli-cpf">
+            </label>
+        </div>
+        <div class="grade-campos-dupla">
+            <label>Rua
+                <input type="text" name="rua" id="edit-cli-rua">
+            </label>
+            <label>Número
+                <input type="text" name="numero" id="edit-cli-numero">
+            </label>
+        </div>
+        <div class="grade-campos-tripla">
+            <label>Bairro
+                <input type="text" name="bairro" id="edit-cli-bairro">
+            </label>
+            <label>Cidade
+                <input type="text" name="cidade" id="edit-cli-cidade">
+            </label>
+            <label>Estado / CEP
+                <input type="text" name="cep" id="edit-cli-cep" placeholder="CEP">
+            </label>
+        </div>
+        <input type="hidden" name="estado" id="edit-cli-estado">
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar cliente</button>
+            <button type="button" id="fechar-modal-cliente" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
 <script src="{{ url_for('static', filename='admin.js') }}"></script>
 {% endblock %}

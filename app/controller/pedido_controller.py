@@ -5,7 +5,7 @@ from flask import (
     request, session
 )
 
-from app.model.pedido import Pedido
+from app.model.pedido import Pedido, STATUS_PEDIDO_VALIDOS
 from app.middleware import (
     login_obrigatorio,
     permissao_obrigatoria
@@ -97,14 +97,7 @@ def atualizar_status(id):
 
     status = dados.get("status")
 
-    status_permitidos = [
-        "Aguardando",
-        "Iniciando Preparo",
-        "Pronto para Entrega",
-        "Entregue"
-    ]
-
-    if status not in status_permitidos:
+    if status not in STATUS_PEDIDO_VALIDOS:
         return jsonify({
             "erro": "Status inválido."
         }), 400
@@ -139,6 +132,9 @@ def definir_tempo_preparo(id):
             raise ValueError()
     except (TypeError, ValueError):
         return jsonify({"erro": "Informe um tempo entre 1 e 480 minutos."}), 400
-    if not Pedido.definir_tempo(id, minutos):
+    if not Pedido.definir_tempo(id, minutos, dados.get("observacoes")):
         return jsonify({"erro": "Pedido não encontrado."}), 404
-    return jsonify({"mensagem": "Tempo estimado atualizado.", "tempo_estimado": minutos})
+    return jsonify({
+        "mensagem": "Tempo estimado e observações atualizados.",
+        "tempo_estimado": minutos
+    })

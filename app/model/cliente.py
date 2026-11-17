@@ -182,6 +182,82 @@ class Cliente:
             conexao.close()
 
     @staticmethod
+    def atualizar_funcionario(id_funcionario, nome, email, tipo, telefone=None, nova_senha=None):
+        if tipo not in ("cozinheiro", "administrador"):
+            raise ValueError("Tipo de funcionário inválido.")
+
+        nome_limpo = limpar_texto(nome)
+        email_limpo = limpar_texto(email).lower()
+        telefone_limpo = limpar_texto(telefone) or None
+
+        if not nome_limpo or not email_valido(email_limpo):
+            raise ValueError("Informe nome e e-mail válido (até 120 caracteres).")
+
+        if nova_senha and not senha_valida(nova_senha):
+            raise ValueError("A nova senha deve ter pelo menos 8 caracteres, misturando letras e números.")
+
+        conexao = conectar()
+        try:
+            atual = conexao.execute(
+                "SELECT * FROM clientes WHERE id = ? AND tipo IN ('cozinheiro', 'administrador')",
+                (id_funcionario,)
+            ).fetchone()
+            if atual is None:
+                return 0
+
+            duplicado = conexao.execute(
+                "SELECT id FROM clientes WHERE email = ? AND id <> ?",
+                (email_limpo, id_funcionario)
+            ).fetchone()
+            if duplicado:
+                raise ValueError("Este e-mail já está em uso por outro usuário.")
+
+            if nova_senha:
+                senha_hash = generate_password_hash(nova_senha)
+                conexao.execute("""
+                    UPDATE clientes
+                    SET nome = ?, email = ?, telefone = ?, tipo = ?, senha = ?
+                    WHERE id = ?
+                """, (nome_limpo, email_limpo, telefone_limpo, tipo, senha_hash, id_funcionario))
+            else:
+                conexao.execute("""
+                    UPDATE clientes
+                    SET nome = ?, email = ?, telefone = ?, tipo = ?
+                    WHERE id = ?
+                """, (nome_limpo, email_limpo, telefone_limpo, tipo, id_funcionario))
+
+            conexao.commit()
+            return 1
+        except Exception:
+            conexao.rollback()
+            raise
+        finally:
+            conexao.close()
+
+    @staticmethod
+    def remover_funcionario(id_funcionario, id_admin_logado=None):
+        if id_admin_logado is not None and int(id_funcionario) == int(id_admin_logado):
+            raise ValueError("Você não pode excluir sua própria conta de administrador logada.")
+
+        conexao = conectar()
+        try:
+            alvo = conexao.execute(
+                "SELECT id, tipo FROM clientes WHERE id = ? AND tipo IN ('cozinheiro', 'administrador')",
+                (id_funcionario,)
+            ).fetchone()
+            if alvo is None:
+                return 0
+
+            conexao.execute("DELETE FROM clientes WHERE id = ?", (id_funcionario,))
+            conexao.commit()
+            return 1
+        except sqlite3.IntegrityError:
+            conexao.rollback()
+            raise ValueError("Não é possível remover este funcionário pois há registros vinculados.")
+        finally:
+            conexao.close()
+
+    @staticmethod
     def listar_funcionarios():
         conexao = conectar()
         try:
@@ -192,6 +268,99 @@ class Cliente:
                 ORDER BY id
             """).fetchall()
             return [dict(linha) for linha in linhas]
+        finally:
+            conexao.close()
+
+    @staticmethod
+    def listar_clientes():
+        conexao = conectar()
+        try:
+            linhas = conexao.execute("""
+                SELECT
+                    c.id,
+                    c.nome,
+                    c.email,
+                    c.telefone,
+                    c.cpf,
+                    c.data_nascimento,
+                    c.genero,
+                    c.endereco_id,
+                    e.rua,
+                    e.numero,
+                    e.bairro,
+                    e.cidade,
+                    e.estado,
+                    e.cep
+                FROM clientes c
+                LEFT JOIN enderecos e ON e.id = c.endereco_id
+                WHERE c.tipo = 'cliente'
+                ORDER BY c.id DESC
+            """).fetchall()
+            return [dict(linha) for linha in linhas]
+        finally:
+            conexao.close()
+
+    @staticmethod
+    def atualizar_cliente_admin(id_cliente, dados):
+        nome = limpar_texto(dados.get("nome"))
+        email = limpar_texto(dados.get("email")).lower()
+        telefone = limpar_texto(dados.get("telefone")) or None
+        cpf = limpar_texto(dados.get("cpf")) or None
+
+        if not nome or not email_valido(email):
+            raise ValueError("Informe nome e e-mail válido (até 120 caracteres).")
+
+        conexao = conectar()
+        try:
+            cliente_atual = conexao.execute(
+                "SELECT * FROM clientes WHERE id = ? AND tipo = 'cliente'",
+                (id_cliente,)
+            ).fetchone()
+            if cliente_atual is None:
+                return 0
+
+            duplicado = conexao.execute(
+                "SELECT id FROM clientes WHERE (email = ? OR (cpf IS NOT NULL AND cpf = ?)) AND id <> ?",
+                (email, cpf, id_cliente)
+            ).fetchone()
+            if duplicado:
+                raise ValueError("E-mail ou CPF já pertence a outro usuário.")
+
+            conexao.execute("""
+                UPDATE clientes
+                SET nome = ?, email = ?, telefone = ?, cpf = ?
+                WHERE id = ?
+            """, (nome, email, telefone, cpf, id_cliente))
+
+            rua = limpar_texto(dados.get("rua"))
+            numero = limpar_texto(dados.get("numero"))
+            bairro = limpar_texto(dados.get("bairro"))
+            cidade = limpar_texto(dados.get("cidade"))
+            estado = limpar_texto(dados.get("estado"))
+            cep = limpar_texto(dados.get("cep"))
+
+            if all([rua, numero, bairro, cidade, estado, cep]):
+                if cliente_atual["endereco_id"]:
+                    conexao.execute("""
+                        UPDATE enderecos
+                        SET rua = ?, numero = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
+                        WHERE id = ?
+                    """, (rua, numero, bairro, cidade, estado, cep, cliente_atual["endereco_id"]))
+                else:
+                    cur = conexao.execute("""
+                        INSERT INTO enderecos (rua, numero, bairro, cidade, estado, cep)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (rua, numero, bairro, cidade, estado, cep))
+                    conexao.execute(
+                        "UPDATE clientes SET endereco_id = ? WHERE id = ?",
+                        (cur.lastrowid, id_cliente)
+                    )
+
+            conexao.commit()
+            return 1
+        except Exception:
+            conexao.rollback()
+            raise
         finally:
             conexao.close()
 

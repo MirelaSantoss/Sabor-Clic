@@ -1,8 +1,21 @@
 const divCarrinho = document.getElementById("carrinho");
 const elementoSubtotal = document.getElementById("subtotal");
 const botaoFinalizar = document.getElementById("finalizar");
+const modalObsCarrinho = document.getElementById("modal-obs-carrinho");
+const formObsCarrinho = document.getElementById("form-obs-carrinho");
+const btnFecharObsCarrinho = document.getElementById("fechar-obs-carrinho");
 
 const carrinho = new Carrinho();
+
+function abrirModalObservacaoItem(indice, item) {
+    if (!modalObsCarrinho) {
+        return;
+    }
+    document.getElementById("indice-obs-carrinho").value = String(indice);
+    document.getElementById("titulo-obs-carrinho").textContent = `Observações — ${item.nome}`;
+    document.getElementById("texto-obs-carrinho").value = item.observacoes || "";
+    modalObsCarrinho.showModal();
+}
 
 function mostrarCarrinho() {
     carrinho.carregar();
@@ -23,14 +36,17 @@ function mostrarCarrinho() {
         titulo.textContent = item.nome;
         infoContainer.append(titulo);
 
-        if (item.observacoes) {
-            const obs = document.createElement("small");
-            obs.textContent = `Obs.: ${item.observacoes}`;
-            infoContainer.append(obs);
-        }
+        const obs = document.createElement("small");
+        obs.textContent = item.observacoes ? `Obs.: ${item.observacoes}` : "Sem observações adicionadas.";
+        infoContainer.append(obs);
 
         const detalhes = document.createElement("p");
         detalhes.textContent = `${item.quantidade} × ${Prato.formatarMoeda(item.preco)} = ${item.subtotalFormatado}`;
+
+        const botaoEditarObs = document.createElement("button");
+        botaoEditarObs.type = "button";
+        botaoEditarObs.textContent = "Editar obs.";
+        botaoEditarObs.onclick = () => abrirModalObservacaoItem(indice, item);
 
         const botaoMenos = document.createElement("button");
         botaoMenos.type = "button";
@@ -56,12 +72,27 @@ function mostrarCarrinho() {
             mostrarCarrinho();
         };
 
-        container.append(infoContainer, detalhes, botaoMenos, botaoMais, botaoRemover);
+        container.append(infoContainer, detalhes, botaoEditarObs, botaoMenos, botaoMais, botaoRemover);
         divCarrinho.appendChild(container);
     });
 
     elementoSubtotal.textContent = `Subtotal: ${carrinho.subtotalFormatado}`;
     botaoFinalizar.disabled = carrinho.vazio;
+}
+
+if (formObsCarrinho) {
+    formObsCarrinho.addEventListener("submit", evento => {
+        evento.preventDefault();
+        const indice = Number(document.getElementById("indice-obs-carrinho").value);
+        const texto = document.getElementById("texto-obs-carrinho").value;
+        carrinho.atualizarObservacoes(indice, texto);
+        modalObsCarrinho.close();
+        mostrarCarrinho();
+    });
+}
+
+if (btnFecharObsCarrinho) {
+    btnFecharObsCarrinho.addEventListener("click", () => modalObsCarrinho.close());
 }
 
 async function finalizarPedido() {

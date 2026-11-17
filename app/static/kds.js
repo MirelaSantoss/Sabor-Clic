@@ -1,5 +1,8 @@
 const kdsContainer = document.getElementById("kds");
 const contadorTopo = document.getElementById("contador-kds");
+const modalTempoKds = document.getElementById("modal-tempo-kds");
+const formTempoKds = document.getElementById("form-tempo-kds");
+const btnFecharModalKds = document.getElementById("fechar-modal-kds");
 
 const COLUNAS_KDS = [
     ["Aguardando", "Pedidos Novos"],
@@ -16,7 +19,7 @@ async function mostrarPedidos() {
         }
 
         const listaPedidos = dados.map(item => new Pedido(item));
-        const pendentes = listaPedidos.filter(p => p.status !== "Entregue");
+        const pendentes = listaPedidos.filter(p => !["Entregue", "Cancelado"].includes(p.status));
 
         if (contadorTopo) {
             contadorTopo.textContent = `#${pendentes.length} Pedidos a serem entregues`;
@@ -95,8 +98,8 @@ async function mostrarPedidos() {
                 const botaoTempo = document.createElement("button");
                 botaoTempo.type = "button";
                 botaoTempo.className = "botao-secundario";
-                botaoTempo.textContent = "Definir tempo";
-                botaoTempo.onclick = () => definirTempo(pedido);
+                botaoTempo.textContent = "Editar tempo / obs.";
+                botaoTempo.onclick = () => abrirModalTempoKds(pedido);
                 acoes.append(botaoTempo);
 
                 if (pedido.proximoStatus) {
@@ -142,30 +145,49 @@ async function alterarStatusDireto(idPedido, novoStatus) {
     }
 }
 
-async function definirTempo(pedido) {
-    const valor = prompt("Tempo estimado de preparo (minutos):", pedido.tempoEstimado || "25");
-    if (valor === null) {
+function abrirModalTempoKds(pedido) {
+    if (!modalTempoKds) {
         return;
     }
-    const minutos = Number(valor);
-    if (!Number.isInteger(minutos) || minutos < 1 || minutos > 480) {
-        alert("Informe um tempo inteiro entre 1 e 480 minutos.");
-        return;
-    }
-    try {
-        const resposta = await fetch(`/pedidos/${pedido.id}/tempo`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ minutos })
-        });
-        const dados = await resposta.json();
-        if (!resposta.ok) {
-            throw new Error(dados.erro || "Falha ao atualizar o tempo estimado.");
+    document.getElementById("kds-pedido-id").value = pedido.id;
+    document.getElementById("titulo-modal-kds").textContent = `Editar Comanda #${pedido.id} (${pedido.clienteNome})`;
+    document.getElementById("kds-input-minutos").value = pedido.tempoEstimado || 25;
+    document.getElementById("kds-input-observacoes").value = pedido.observacoes || "";
+    modalTempoKds.showModal();
+}
+
+document.querySelectorAll(".preset-tempo").forEach(botao => {
+    botao.addEventListener("click", () => {
+        document.getElementById("kds-input-minutos").value = botao.dataset.min;
+    });
+});
+
+if (formTempoKds) {
+    formTempoKds.addEventListener("submit", async evento => {
+        evento.preventDefault();
+        const idPedido = document.getElementById("kds-pedido-id").value;
+        const minutos = Number(document.getElementById("kds-input-minutos").value);
+        const observacoes = document.getElementById("kds-input-observacoes").value;
+        try {
+            const resposta = await fetch(`/pedidos/${idPedido}/tempo`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ minutos, observacoes })
+            });
+            const dados = await resposta.json();
+            if (!resposta.ok) {
+                throw new Error(dados.erro || "Falha ao atualizar o tempo estimado.");
+            }
+            modalTempoKds.close();
+            await mostrarPedidos();
+        } catch (erro) {
+            alert(erro.message);
         }
-        await mostrarPedidos();
-    } catch (erro) {
-        alert(erro.message);
-    }
+    });
+}
+
+if (btnFecharModalKds) {
+    btnFecharModalKds.addEventListener("click", () => modalTempoKds.close());
 }
 
 function atualizarRelogio() {

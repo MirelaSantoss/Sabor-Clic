@@ -8,5 +8,29 @@
     </div>
     <div id="kds" class="kds-colunas"></div>
 </section>
+
+<dialog id="modal-tempo-kds" class="modal-admin">
+    <form id="form-tempo-kds" class="form-card">
+        <h2 id="titulo-modal-kds">Editar Tempo e Observações</h2>
+        <input type="hidden" id="kds-pedido-id">
+        <div class="pedido-kds-acoes">
+            <button type="button" class="botao-secundario preset-tempo" data-min="15">15 min</button>
+            <button type="button" class="botao-secundario preset-tempo" data-min="20">20 min</button>
+            <button type="button" class="botao-secundario preset-tempo" data-min="30">30 min</button>
+            <button type="button" class="botao-secundario preset-tempo" data-min="45">45 min</button>
+        </div>
+        <label>Tempo estimado de preparo (1 a 480 minutos)
+            <input type="number" id="kds-input-minutos" min="1" max="480" required>
+        </label>
+        <label>Observações da comanda
+            <textarea id="kds-input-observacoes" maxlength="255"></textarea>
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar</button>
+            <button type="button" id="fechar-modal-kds" class="botao-secundario">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
 <script src="{{ url_for('static', filename='kds.js') }}"></script>
 {% endblock %}

@@ -166,11 +166,27 @@ def pagina_bancadas():
     return render_template("bancadas.html")
 
 
-
 @clientes_bp.route("/api/bancadas", methods=["GET"])
 def listar_bancadas():
     apenas_disp = session.get("tipo") != "administrador"
     return jsonify(Bancada.listar(apenas_disponiveis=apenas_disp)), 200
+
+
+@clientes_bp.route("/api/bancadas/agenda", methods=["GET"])
+@login_obrigatorio
+def agenda_ocupacao_bancadas():
+    bancada_id = request.args.get("bancada_id")
+    data_filtro = request.args.get("data")
+    eh_admin = session.get("tipo") == "administrador"
+    try:
+        agenda = Bancada.agenda_ocupacao(
+            bancada_id=bancada_id if bancada_id else None,
+            data_filtro=data_filtro if data_filtro else None,
+            incluir_cliente=eh_admin
+        )
+        return jsonify(agenda), 200
+    except (ValueError, TypeError) as erro:
+        return jsonify({"erro": str(erro)}), 400
 
 
 @clientes_bp.route("/api/bancadas/reservas", methods=["GET", "POST"])
@@ -196,5 +212,35 @@ def reservas_bancadas():
         resultado = Bancada.criar_reserva(session["usuario_id"], bancada_id, inicio, fim)
         resultado["mensagem"] = "Reserva de bancada confirmada com sucesso!"
         return jsonify(resultado), 201
+    except (ValueError, TypeError) as erro:
+        return jsonify({"erro": str(erro)}), 400
+
+
+@clientes_bp.route("/api/bancadas/reservas/<int:id>", methods=["PUT", "DELETE"])
+@permissao_obrigatoria("cliente")
+def editar_ou_cancelar_reserva_cliente(id):
+    try:
+        if request.method == "DELETE":
+            resultado = Bancada.atualizar_reserva_cliente(
+                id,
+                session["usuario_id"],
+                cancelar=True
+            )
+            resultado["mensagem"] = "Reserva cancelada com sucesso."
+            return jsonify(resultado), 200
+
+        dados = request.get_json(silent=True) or {}
+        atualizada = Bancada.atualizar_reserva_cliente(
+            id,
+            session["usuario_id"],
+            bancada_id=dados.get("bancada_id", dados.get("id_bancada")),
+            data_hora_inicio=dados.get("data_hora_inicio"),
+            data_hora_fim=dados.get("data_hora_fim"),
+            cancelar=bool(dados.get("cancelar"))
+        )
+        atualizada["mensagem"] = "Reserva reagendada com sucesso!"
+        return jsonify(atualizada), 200
+    except PermissionError as erro:
+        return jsonify({"erro": str(erro)}), 403
     except (ValueError, TypeError) as erro:
         return jsonify({"erro": str(erro)}), 400
