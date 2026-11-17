@@ -2,31 +2,8 @@
 {% block conteudo %}
 <section class="pagina">
     <h1>Meus Pedidos</h1>
+    <p>Acompanhe o status e o histórico das suas refeições solicitadas no cardápio digital.</p>
     <div id="meus-pedidos" class="lista"></div>
-
-    <div class="painel-duplo">
-        <section class="form-card">
-            <h2>Agendar Bancada Gastronômica</h2>
-            <form id="form-reserva-bancada">
-                <label>Bancada equipada
-                    <select id="select-bancada" name="id_bancada" required></select>
-                </label>
-                <label>Início da locação
-                    <input type="datetime-local" name="data_hora_inicio" required>
-                </label>
-                <label>Fim da locação
-                    <input type="datetime-local" name="data_hora_fim" required>
-                </label>
-                <button class="botao" type="submit">Solicitar reserva</button>
-            </form>
-            <p id="mensagem-reserva" role="status"></p>
-        </section>
-        <section>
-            <h2>Minhas Reservas de Bancadas</h2>
-            <div id="minhas-reservas" class="lista"></div>
-        </section>
-    </div>
-
     <script src="{{ url_for('static', filename='pedidos.js') }}"></script>
 </section>
 {% endblock %}

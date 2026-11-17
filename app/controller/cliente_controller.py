@@ -160,6 +160,13 @@ def carrinho():
     return render_template("carrinho.html")
 
 
+@clientes_bp.route("/bancadas", methods=["GET"])
+@permissao_obrigatoria("cliente")
+def pagina_bancadas():
+    return render_template("bancadas.html")
+
+
+
 @clientes_bp.route("/api/bancadas", methods=["GET"])
 def listar_bancadas():
     apenas_disp = session.get("tipo") != "administrador"

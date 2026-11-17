@@ -16,6 +16,7 @@
             {% if not session.get('usuario_id') or session.get('tipo') == 'cliente' %}
                 <a href="/carrinho">Carrinho</a>
                 <a href="/pedido">Pedidos</a>
+                <a href="/bancadas">Bancadas</a>
             {% endif %}
             {% if session.get('tipo') in ('cozinheiro', 'administrador') %}
                 <a href="/cozinheiro">Cozinha</a>
@@ -44,18 +45,21 @@
         <section class="hero">
             <div>
                 <p class="sobretitulo">COZINHA · GESTÃO · ENTREGA</p>
-                <h1>Sua experiência gastronômica,<br><em>em um só lugar.</em></h1>
-                <p>Explore nosso cardápio, faça seu pedido e gerencie seus espaços gastronômicos com praticidade e sabor.</p>
-                <a class="botao" href="/cardapio">Explorar Cardápio →</a>
+                <h1>Sua experiência gastronômica, <em>em um só lugar.</em></h1>
+                <p>Explore nosso cardápio digital para pedir sua refeição ou alugue bancadas gastronômicas equipadas por hora para sua operação.</p>
+                <div class="pedido-kds-acoes">
+                    <a class="botao" href="/cardapio">Explorar Cardápio →</a>
+                    <a class="botao-secundario" href="/bancadas">Alugar Bancada</a>
+                </div>
             </div>
             <div class="hero-arte">
                 <div class="prato-ilustracao">🍝</div>
             </div>
         </section>
         <section class="beneficios">
-            <span>♨ Gestão de cardápio</span>
-            <span>🛵 Pedidos rápidos</span>
-            <span>▦ Acompanhamento de pedidos</span>
+            <span>♨ Cardápio digital e delivery</span>
+            <span>🛵 Acompanhamento em tempo real</span>
+            <span>🍳 Locação de bancadas equipadas</span>
         </section>
         {% endblock %}
     </main>
