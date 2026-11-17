@@ -1,5 +1,5 @@
 USE sabor_e_clic;
-
+-- faturamento do dia e ticket médio
 SELECT 
     DATE(p.data_hora) AS data_venda,
     COUNT(DISTINCT p.id_pedido) AS total_pedidos,
@@ -9,7 +9,7 @@ FROM Pedido p
 WHERE p.status_pedido NOT IN ('CANCELADO')
 GROUP BY DATE(p.data_hora)
 ORDER BY data_venda DESC;
-
+-- alerta de reposição de estoque
 SELECT 
     i.id_ingrediente,
     i.nome AS ingrediente,
@@ -26,7 +26,7 @@ LEFT JOIN Lote_Estoque le ON i.id_ingrediente = le.id_ingrediente
 GROUP BY i.id_ingrediente, i.nome, i.unidade_medida, i.estoque_minimo
 HAVING estoque_disponivel <= i.estoque_minimo
 ORDER BY estoque_disponivel ASC;
-
+-- lucratividade e margem por prato
 SELECT 
     pr.id_prato,
     pr.nome AS nome_prato,
@@ -45,7 +45,7 @@ INNER JOIN (
 ) sub ON cp.id_ingrediente = sub.id_ingrediente
 GROUP BY pr.id_prato, pr.nome, c.nome, pr.preco_venda
 ORDER BY lucro_bruto_porcao DESC;
-
+-- produtividade por bancada reservada 
 SELECT 
     b.cod_identificacao,
     b.descricao,
