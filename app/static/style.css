@@ -684,8 +684,8 @@ small,
 }
 
 .sidebar-logo-circulo {
-    width: 112px;
-    height: 112px;
+    width: 128px;
+    height: 128px;
     border-radius: 50%;
     background: var(--creme);
     color: var(--marrom);
@@ -694,6 +694,9 @@ small,
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    text-align: center;
 }
 
 .sidebar-logo-circulo span {
@@ -702,8 +705,9 @@ small,
 }
 
 .sidebar-logo-circulo strong {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
+    line-height: 1.2;
 }
 
 .categorias h2 {
