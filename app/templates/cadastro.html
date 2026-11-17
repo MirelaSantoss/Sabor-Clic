@@ -1,0 +1,61 @@
+{% extends "index.html" %}
+{% block conteudo %}
+<section class="pagina-autenticacao">
+    <div class="faixa-etapa">
+        <h1>Passo: 1</h1>
+    </div>
+
+    <div class="auth-container">
+        <h2>Formulário de Cadastro</h2>
+        <div class="auth-card">
+            <h3>Fazendo Cadastro:</h3>
+            <form action="/formulario" method="POST" onsubmit="return validarFormulario()">
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-user"></use></svg></span>
+                    <input type="text" name="nome" id="nome" placeholder="Nome completo" required>
+                </label>
+                <div class="grade-campos-dupla">
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-phone"></use></svg></span>
+                        <input type="text" name="telefone" id="telefone" placeholder="Telefone / WhatsApp" required>
+                    </label>
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-id"></use></svg></span>
+                        <input type="text" name="cpf" id="cpf" placeholder="CPF" required>
+                    </label>
+                </div>
+                <div class="grade-campos-dupla">
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-calendar"></use></svg></span>
+                        <input type="date" name="data_nascimento" id="data_nascimento" title="Data de nascimento" required>
+                    </label>
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-gender"></use></svg></span>
+                        <select name="genero" id="genero" required>
+                            <option value="">Gênero</option>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </label>
+                </div>
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-mail"></use></svg></span>
+                    <input type="email" name="email" id="email" maxlength="120" placeholder="E-mail" required>
+                </label>
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-lock"></use></svg></span>
+                    <input type="password" name="senha" id="senha" minlength="8" placeholder="Criar senha (mín. 8 chars, letras e números)" required>
+                </label>
+                <button class="botao botao-auth" type="submit">Próximo</button>
+            </form>
+            <script src="{{ url_for('static', filename='cadastro.js') }}"></script>
+        </div>
+
+        <div class="auth-rodape">
+            <a class="botao-secundario" href="/login">Já possuo cadastro</a>
+            <a class="botao-voltar" href="/">← Voltar</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

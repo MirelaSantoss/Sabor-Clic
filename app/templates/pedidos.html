@@ -1,0 +1,9 @@
+{% extends "index.html" %}
+{% block conteudo %}
+<section class="pagina">
+    <h1>Meus Pedidos</h1>
+    <p>Acompanhe o status e o histórico das suas refeições solicitadas no cardápio digital.</p>
+    <div id="meus-pedidos" class="lista"></div>
+    <script src="{{ url_for('static', filename='pedidos.js') }}"></script>
+</section>
+{% endblock %}

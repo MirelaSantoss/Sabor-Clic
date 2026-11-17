@@ -1,0 +1,41 @@
+{% extends "index.html" %}
+{% block conteudo %}
+<section class="pagina pagina-carrinho-figma">
+    <div class="faixa-etapa">
+        <h1>Meu Carrinho</h1>
+    </div>
+
+    <div id="carrinho" class="lista-carrinho-figma"></div>
+
+    <div class="bloco-adicionar-item-carrinho">
+        <a class="botao-secundario botao-adicionar-item-figma" href="{{ url_for('prato.pagina_cardapio') }}">
+            <svg class="icone-svg" aria-hidden="true"><use href="#ico-plus"></use></svg> Adicionar Item
+        </a>
+    </div>
+
+    <footer class="barra-rodape-carrinho">
+        <button id="limpar-carrinho" class="botao-secundario btn-limpar-carrinho-figma" type="button">Limpar Carrinho</button>
+        <button id="finalizar" class="botao btn-finalizar-carrinho-figma" type="button">
+            <span>Finalizar pedido</span>
+            <strong id="subtotal">Valor total: R$ 0,00</strong>
+        </button>
+    </footer>
+</section>
+
+<dialog id="modal-obs-carrinho" class="modal-admin">
+    <form id="form-obs-carrinho" class="form-card">
+        <h2 id="titulo-obs-carrinho">Detalhes e Observações do Item</h2>
+        <input type="hidden" id="indice-obs-carrinho">
+        <p id="resumo-item-obs-carrinho"></p>
+        <label>Observações especiais para o preparo
+            <textarea id="texto-obs-carrinho" maxlength="255" placeholder="Ex.: sem cebola, ponto da carne..."></textarea>
+        </label>
+        <div class="pedido-kds-acoes">
+            <button type="submit" class="botao">Salvar observação</button>
+            <button type="button" id="fechar-obs-carrinho" class="botao-secundario">Fechar</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="{{ url_for('static', filename='carrinho.js') }}"></script>
+{% endblock %}
