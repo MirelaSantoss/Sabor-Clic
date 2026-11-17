@@ -1,25 +1,65 @@
 {% extends "index.html" %}
 {% block conteudo %}
 <div class="catalogo">
-    <aside class="categorias">
-        <h2>Cardápio</h2>
-        <a href="#Pratos">Pratos</a>
-        <a href="#Bebidas">Bebidas</a>
-        <a href="#Combos">Combos</a>
-        <a href="#Sobremesas">Sobremesas</a>
+    <aside class="categorias" aria-label="Categorias do cardápio">
+        <div class="sidebar-logo-box">
+            <div class="sidebar-logo-circulo" aria-hidden="true">
+                <span>♨</span>
+                <strong>LOGO</strong>
+            </div>
+            <small>Sabor &amp; Clic</small>
+        </div>
+        <h2>Categorias</h2>
+        <a href="#Pratos" class="link-categoria ativa" data-categoria="Pratos">Pratos</a>
+        <a href="#Bebidas" class="link-categoria" data-categoria="Bebidas">Bebidas</a>
+        <a href="#Combos" class="link-categoria" data-categoria="Combos">Combos</a>
+        <a href="#Sobremesas" class="link-categoria" data-categoria="Sobremesas">Sobremesas</a>
     </aside>
+
     <section class="catalogo-conteudo">
-        <h1>Nosso Cardápio</h1>
-        <label class="busca">Pesquisar
-            <input id="pesquisa" placeholder="O que você gostaria de comer?">
-        </label>
+        <div class="barra-topo-cardapio">
+            <div class="barra-pesquisa-figma">
+                <span class="icone-lupa" aria-hidden="true">🔍</span>
+                <input id="pesquisa" type="search" placeholder="Pesquisar prato ou ingrediente..." aria-label="Pesquisar no cardápio">
+                <button type="button" id="limpar-pesquisa" class="btn-limpar-pesquisa" title="Limpar pesquisa">✕</button>
+            </div>
+            <div class="atalhos-topo-cardapio">
+                <a class="botao" href="/carrinho">🛒 Carrinho</a>
+                <a class="botao-secundario" href="/">🏠 Início</a>
+            </div>
+        </div>
+
+        <h1 class="titulo-central-cardapio">Cardápio</h1>
         <div id="cardapio"></div>
-        <a class="botao" href="/carrinho">Ver carrinho →</a>
     </section>
 </div>
-<dialog id="detalhes">
+
+<dialog id="detalhes" class="modal-detalhes-figma">
+    <div class="detalhes-cabecalho-figma">
+        <button id="fechar-detalhes" class="botao-secundario" type="button">← Voltar ao Cardápio</button>
+        <h2 id="detalhes-titulo-modal">Detalhes do prato</h2>
+    </div>
+    <hr class="divisor-figma">
     <div id="detalhes-corpo"></div>
-    <button id="fechar-detalhes" class="botao-secundario" type="button">Fechar</button>
 </dialog>
+
+<dialog id="modal-confirmacao-adicao" class="modal-confirmacao-figma">
+    <div class="confirmacao-corpo-figma">
+        <h2 id="conf-titulo-produto">Produto adicionado ao carrinho</h2>
+        <hr class="divisor-figma">
+        <h3>Detalhes do pedido:</h3>
+        <p id="conf-quantidade-produto">Quantidade: 1</p>
+        <div class="conf-obs-box">
+            <strong>Observações:</strong>
+            <p id="conf-observacoes-produto">Nenhuma observação informada.</p>
+        </div>
+        <hr class="divisor-figma">
+        <div class="conf-botoes-empilhados">
+            <button type="button" id="btn-conf-voltar" class="botao-secundario">Voltar ao cardápio</button>
+            <a href="/carrinho" class="botao">Ir para o carrinho</a>
+        </div>
+    </div>
+</dialog>
+
 <script src="{{ url_for('static', filename='cardapio.js') }}"></script>
 {% endblock %}

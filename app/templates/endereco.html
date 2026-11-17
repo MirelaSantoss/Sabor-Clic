@@ -1,29 +1,49 @@
 {% extends "index.html" %}
 {% block conteudo %}
-<section class="form-pagina">
-    <div class="form-card">
-        <h1>Cadastro de endereço</h1>
-        <form action="/endereco" method="POST">
-            <label>Rua
-                <input type="text" name="rua" required>
-            </label>
-            <label>Número
-                <input type="text" name="numero" required>
-            </label>
-            <label>Bairro
-                <input type="text" name="bairro" required>
-            </label>
-            <label>Cidade
-                <input type="text" name="cidade" required>
-            </label>
-            <label>Estado
-                <input type="text" name="estado" required>
-            </label>
-            <label>CEP
-                <input type="text" name="cep" required>
-            </label>
-            <button class="botao" type="submit">Finalizar cadastro</button>
-        </form>
+<section class="pagina-autenticacao">
+    <div class="faixa-etapa">
+        <h1>Passo: 2</h1>
+    </div>
+
+    <div class="auth-container auth-container-largo">
+        <div class="auth-card">
+            <h2>Endereço de entrega</h2>
+            <form action="/endereco" method="POST">
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true">📍</span>
+                    <input type="text" name="rua" placeholder="Logradouro (Rua / Avenida)" required>
+                </label>
+                <div class="grade-campos-dupla">
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true">🏘️</span>
+                        <input type="text" name="bairro" placeholder="Bairro" required>
+                    </label>
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true">🏙️</span>
+                        <input type="text" name="cidade" placeholder="Cidade" required>
+                    </label>
+                </div>
+                <div class="grade-campos-tripla">
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true">🔢</span>
+                        <input type="text" name="numero" placeholder="Número" required>
+                    </label>
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true">📮</span>
+                        <input type="text" name="cep" placeholder="CEP" required>
+                    </label>
+                    <label class="campo-com-icone">
+                        <span class="icone-campo" aria-hidden="true">🗺️</span>
+                        <input type="text" name="estado" placeholder="Estado (UF)" required>
+                    </label>
+                </div>
+                <button class="botao botao-auth" type="submit">Finalizar cadastro</button>
+            </form>
+        </div>
+
+        <div class="auth-rodape">
+            <a class="botao-voltar" href="/formulario">← Voltar</a>
+        </div>
     </div>
 </section>
 {% endblock %}

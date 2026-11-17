@@ -11,18 +11,18 @@
     <header class="topo">
         <a class="marca" href="/">♨ Sabor <span>&amp;</span> Clic</a>
         <nav>
-            <a href="/">Início</a>
-            <a href="/cardapio">Cardápio</a>
+            <a href="/">🏠 Início</a>
+            <a href="/cardapio">🍽 Cardápio</a>
             {% if not session.get('usuario_id') or session.get('tipo') == 'cliente' %}
-                <a href="/carrinho">Carrinho</a>
-                <a href="/pedido">Pedidos</a>
-                <a href="/bancadas">Bancadas</a>
+                <a href="/carrinho">🛒 Carrinho</a>
+                <a href="/pedido">📋 Pedidos</a>
+                <a href="/bancadas">🍳 Bancadas</a>
             {% endif %}
             {% if session.get('tipo') in ('cozinheiro', 'administrador') %}
-                <a href="/cozinheiro">Cozinha</a>
+                <a href="/cozinheiro">👨‍🍳 Cozinha (KDS)</a>
             {% endif %}
             {% if session.get('tipo') == 'administrador' %}
-                <a href="/admin">Administração</a>
+                <a href="/admin">⚙️ Administração</a>
             {% endif %}
             {% if session.get('usuario_id') %}
                 <span class="usuario-logado">{{ session.get('usuario') }} ({{ session.get('tipo')|capitalize }})</span>
@@ -30,7 +30,7 @@
                     <button class="link-btn" type="submit">Sair</button>
                 </form>
             {% else %}
-                <a href="/login">Entrar</a>
+                <a href="/login">👤 Entrar</a>
                 <a class="botao" href="/formulario">Cadastrar</a>
             {% endif %}
         </nav>
@@ -42,24 +42,36 @@
     {% endwith %}
     <main>
         {% block conteudo %}
-        <section class="hero">
-            <div>
-                <p class="sobretitulo">COZINHA · GESTÃO · ENTREGA</p>
-                <h1>Sua experiência gastronômica, <em>em um só lugar.</em></h1>
-                <p>Explore nosso cardápio digital para pedir sua refeição ou alugue bancadas gastronômicas equipadas por hora para sua operação.</p>
-                <div class="pedido-kds-acoes">
-                    <a class="botao" href="/cardapio">Explorar Cardápio →</a>
-                    <a class="botao-secundario" href="/bancadas">Alugar Bancada</a>
-                </div>
+        <section class="home-banner">
+            <div class="logo-circular-home" aria-hidden="true">
+                <span>♨</span>
+                <strong>Sabor &amp; Clic</strong>
             </div>
-            <div class="hero-arte">
-                <div class="prato-ilustracao">🍝</div>
-            </div>
+            <h1>Faça seu pedido de forma simples e rápida</h1>
+            <p>Plataforma integrada de gastronomia, delivery em tempo real e locação de bancadas equipadas.</p>
         </section>
-        <section class="beneficios">
-            <span>♨ Cardápio digital e delivery</span>
-            <span>🛵 Acompanhamento em tempo real</span>
-            <span>🍳 Locação de bancadas equipadas</span>
+
+        <section class="vitrine-inicial">
+            <article class="vitrine-card">
+                <span class="vitrine-icone" aria-hidden="true">🍔</span>
+                <h2>Cardápio Digital Intuitivo</h2>
+                <p>Explore pratos executivos, bebidas, combos e sobremesas com personalização de observações.</p>
+            </article>
+            <article class="vitrine-card">
+                <span class="vitrine-icone" aria-hidden="true">⏱</span>
+                <h2>Produção em Tempo Real (KDS)</h2>
+                <p>Acompanhe cada etapa do preparo da sua refeição diretamente da nossa cozinha.</p>
+            </article>
+            <article class="vitrine-card">
+                <span class="vitrine-icone" aria-hidden="true">🍳</span>
+                <h2>Locação de Dark Kitchen</h2>
+                <p>Alugue estações gastronômicas equipadas por hora com agenda livre de conflitos.</p>
+            </article>
+        </section>
+
+        <section class="cta-home-bloco">
+            <a class="botao botao-cta-principal" href="/cardapio">Faça seu pedido aqui</a>
+            <a class="botao-secundario botao-cta-secundario" href="/bancadas">Alugar Bancada Equipada</a>
         </section>
         {% endblock %}
     </main>

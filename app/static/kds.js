@@ -22,7 +22,7 @@ async function mostrarPedidos() {
         const pendentes = listaPedidos.filter(p => !["Entregue", "Cancelado"].includes(p.status));
 
         if (contadorTopo) {
-            contadorTopo.textContent = `#${pendentes.length} Pedidos a serem entregues`;
+            contadorTopo.textContent = `#${pendentes.length}  Pedidos a serem entregues`;
         }
 
         kdsContainer.replaceChildren();
@@ -53,7 +53,12 @@ async function mostrarPedidos() {
             });
 
             const cabecalhoColuna = document.createElement("h2");
-            cabecalhoColuna.textContent = `${tituloColuna} (${pedidosDaColuna.length})`;
+            const spanTitulo = document.createElement("span");
+            spanTitulo.textContent = tituloColuna;
+            const spanQtdColuna = document.createElement("span");
+            spanQtdColuna.className = "kds-contador-coluna";
+            spanQtdColuna.textContent = String(pedidosDaColuna.length).padStart(2, "0");
+            cabecalhoColuna.append(spanTitulo, spanQtdColuna);
             coluna.append(cabecalhoColuna);
 
             pedidosDaColuna.forEach(pedido => {
@@ -69,28 +74,70 @@ async function mostrarPedidos() {
                 topoCard.className = "pedido-kds-topo";
 
                 const h3 = document.createElement("h3");
-                h3.textContent = `#${pedido.id} · ${pedido.clienteNome}`;
+                const idFormatado = String(pedido.id).padStart(4, "0");
+                h3.textContent = `#${idFormatado}`;
+                h3.title = `Cliente: ${pedido.clienteNome}`;
+
+                const blocoCronometro = document.createElement("div");
+                blocoCronometro.className = "kds-bloco-cronometro";
+
+                const iconeTimer = document.createElement("span");
+                iconeTimer.className = "kds-icone-timer-card";
+                iconeTimer.setAttribute("aria-hidden", "true");
+                iconeTimer.textContent = "⏲";
 
                 const badgeTempo = document.createElement("span");
                 badgeTempo.className = "pedido-kds-tempo";
-                badgeTempo.textContent = `⏱ ${pedido.tempoEstimado || 20} min (${pedido.minutosDecorridos} min atrás)`;
+                badgeTempo.textContent = `${pedido.tempoEstimado || 20} min`;
+                badgeTempo.onclick = () => abrirModalTempoKds(pedido);
 
-                topoCard.append(h3, badgeTempo);
+                blocoCronometro.append(iconeTimer, badgeTempo);
+                topoCard.append(h3, blocoCronometro);
                 card.append(topoCard);
 
+                const listaItens = document.createElement("div");
+                listaItens.className = "kds-lista-itens";
+
                 pedido.itens.forEach(item => {
-                    const linha = document.createElement("p");
-                    const obsItem = item.observacoes ? ` — Obs: ${item.observacoes}` : "";
-                    linha.textContent = `${item.quantidade}× ${item.nome}${obsItem}`;
-                    card.append(linha);
+                    const linha = document.createElement("div");
+                    linha.className = "kds-linha-item";
+
+                    const boxQtd = document.createElement("span");
+                    boxQtd.className = "kds-qtd-box";
+                    boxQtd.textContent = `${item.quantidade}x`;
+
+                    const nomePrato = document.createElement("strong");
+                    nomePrato.className = "kds-nome-prato";
+                    const obsItem = item.observacoes ? ` (${item.observacoes})` : "";
+                    nomePrato.textContent = `${item.nome}${obsItem}`;
+
+                    const tagCat = document.createElement("span");
+                    tagCat.className = "kds-tag-categoria";
+                    tagCat.textContent = item.categoria || "Pratos";
+
+                    linha.append(boxQtd, nomePrato, tagCat);
+                    listaItens.append(linha);
                 });
 
-                if (pedido.observacoes) {
-                    const boxObs = document.createElement("div");
-                    boxObs.className = "pedido-kds-obs";
-                    boxObs.textContent = `📝 Observação: ${pedido.observacoes}`;
-                    card.append(boxObs);
-                }
+                card.append(listaItens);
+
+                const boxObs = document.createElement("div");
+                boxObs.className = pedido.observacoes
+                    ? "kds-barra-observacao com-obs"
+                    : "kds-barra-observacao";
+                boxObs.onclick = () => abrirModalTempoKds(pedido);
+
+                const iconeNota = document.createElement("span");
+                iconeNota.setAttribute("aria-hidden", "true");
+                iconeNota.textContent = "📝";
+
+                const textoObs = document.createElement("span");
+                textoObs.textContent = pedido.observacoes
+                    ? `Observação: ${pedido.observacoes}`
+                    : "Observação (clique para editar tempo / nota)";
+
+                boxObs.append(iconeNota, textoObs);
+                card.append(boxObs);
 
                 const acoes = document.createElement("div");
                 acoes.className = "pedido-kds-acoes";
@@ -98,7 +145,7 @@ async function mostrarPedidos() {
                 const botaoTempo = document.createElement("button");
                 botaoTempo.type = "button";
                 botaoTempo.className = "botao-secundario";
-                botaoTempo.textContent = "Editar tempo / obs.";
+                botaoTempo.textContent = "Tempo / Obs.";
                 botaoTempo.onclick = () => abrirModalTempoKds(pedido);
                 acoes.append(botaoTempo);
 
@@ -107,11 +154,11 @@ async function mostrarPedidos() {
                     botaoAvancar.type = "button";
                     botaoAvancar.className = "botao";
                     if (statusColuna === "Aguardando") {
-                        botaoAvancar.textContent = "Iniciar preparo";
+                        botaoAvancar.textContent = "Iniciar preparo →";
                     } else if (statusColuna === "Iniciando Preparo") {
-                        botaoAvancar.textContent = "Pronto para entrega";
+                        botaoAvancar.textContent = "Pronto p/ entrega →";
                     } else {
-                        botaoAvancar.textContent = "Concluir entrega";
+                        botaoAvancar.textContent = "Concluir entrega ✓";
                     }
                     botaoAvancar.onclick = () => alterarStatusDireto(pedido.id, pedido.proximoStatus);
                     acoes.append(botaoAvancar);
@@ -150,7 +197,7 @@ function abrirModalTempoKds(pedido) {
         return;
     }
     document.getElementById("kds-pedido-id").value = pedido.id;
-    document.getElementById("titulo-modal-kds").textContent = `Editar Comanda #${pedido.id} (${pedido.clienteNome})`;
+    document.getElementById("titulo-modal-kds").textContent = `Comanda #${String(pedido.id).padStart(4, "0")} (${pedido.clienteNome})`;
     document.getElementById("kds-input-minutos").value = pedido.tempoEstimado || 25;
     document.getElementById("kds-input-observacoes").value = pedido.observacoes || "";
     modalTempoKds.showModal();

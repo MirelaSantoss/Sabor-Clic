@@ -254,6 +254,7 @@ class Pedido:
                 SELECT
                     pratos.id AS prato_id,
                     pratos.nome,
+                    COALESCE(pratos.categoria, 'Pratos') AS categoria,
                     pedido_itens.quantidade,
                     pedido_itens.preco_unitario,
                     pedido_itens.observacoes

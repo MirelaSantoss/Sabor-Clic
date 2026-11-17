@@ -1,11 +1,21 @@
 {% extends "index.html" %}
 {% block conteudo %}
 <section class="pagina cozinha">
-    <div class="cozinha-cabecalho">
-        <h1>♨ KITCHEN DISPLAY</h1>
-        <p id="contador-kds">#0 Pedidos a serem entregues</p>
-        <span id="relogio">00:00</span>
+    <div class="cozinha-cabecalho cozinha-cabecalho-figma">
+        <div class="kds-logo-bloco">
+            <span class="kds-icone-chef" aria-hidden="true">👨‍🍳</span>
+            <h1>KITCHEN DISPLAY</h1>
+        </div>
+        <div class="kds-central-bloco">
+            <span class="kds-icone-monitor" aria-hidden="true">📊</span>
+            <p id="contador-kds" class="kds-pilula-contador">#0 Pedidos a serem entregues</p>
+        </div>
+        <div class="kds-relogio-bloco">
+            <span class="kds-icone-relogio" aria-hidden="true">⏱</span>
+            <span id="relogio">00:00</span>
+        </div>
     </div>
+
     <div id="kds" class="kds-colunas"></div>
 </section>
 
