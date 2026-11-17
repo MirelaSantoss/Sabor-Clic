@@ -1,7 +1,62 @@
+import math
+import re
 from functools import wraps
 from flask import session, redirect, url_for, flash, jsonify, request
 
-#diferenciar as chamadas de dados do json
+PADRAO_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PADRAO_TAGS_HTML = re.compile(r"<[^>]*>")
+CATEGORIAS_VALIDAS = ("Pratos", "Bebidas", "Combos", "Sobremesas")
+
+
+def limpar_texto(valor):
+    if valor is None:
+        return ""
+    return PADRAO_TAGS_HTML.sub("", str(valor)).strip()
+
+
+def email_valido(email):
+    if not isinstance(email, str):
+        return False
+    email_limpo = email.strip()
+    return 3 <= len(email_limpo) <= 120 and bool(PADRAO_EMAIL.match(email_limpo))
+
+
+def senha_valida(senha):
+    if not isinstance(senha, str) or len(senha) < 8:
+        return False
+    tem_letra = any(c.isalpha() for c in senha)
+    tem_numero = any(c.isdigit() for c in senha)
+    return tem_letra and tem_numero
+
+
+def nome_prato_valido(nome):
+    nome_limpo = limpar_texto(nome)
+    return 3 <= len(nome_limpo) <= 120
+
+
+def converter_preco(valor):
+    if isinstance(valor, bool) or valor is None:
+        raise ValueError("Preço inválido.")
+    texto = str(valor).strip().replace(",", ".")
+    preco = float(texto)
+    if math.isnan(preco) or math.isinf(preco) or preco <= 0:
+        raise ValueError("O preço deve ser maior que zero.")
+    return round(preco, 2)
+
+
+def converter_ativo(valor, padrao=1):
+    if valor is None:
+        return int(bool(padrao))
+    if isinstance(valor, bool):
+        return 1 if valor else 0
+    if isinstance(valor, (int, float)):
+        return 1 if valor != 0 else 0
+    texto = str(valor).strip().lower()
+    if texto in ("0", "false", "nao", "não", "inativo", "off", ""):
+        return 0
+    return 1
+
+
 def _eh_requisicao_api():
     return (
         request.is_json
@@ -10,7 +65,7 @@ def _eh_requisicao_api():
         or request.path == "/minha-conta"
     )
 
-#verificação de etiqueta do usuario
+
 def _destino_padrao(tipo):
     rotas = {
         "administrador": "admin.painel",

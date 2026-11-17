@@ -1,30 +1,157 @@
-const cardapio=document.getElementById('cardapio');
-const dinheiro=valor=>Number(valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-let todos=[];
-class Produto{constructor(dados){Object.assign(this,dados)} get precoFormatado(){return dinheiro(this.preco)} }
-async function mostrarCardapio(){try{const resposta=await fetch('/api/pratos');if(!resposta.ok)throw Error('Erro ao carregar cardápio');todos=(await resposta.json()).map(x=>new Produto(x));renderizar();}catch(e){cardapio.textContent=e.message}}
-function renderizar(){const busca=document.getElementById('pesquisa').value.toLowerCase();cardapio.replaceChildren();
- for(const categoria of ['Pratos','Bebidas','Combos','Sobremesas']){
-  const itens=todos.filter(p=>(p.categoria||'Pratos')===categoria&&p.nome.toLowerCase().includes(busca));
-  const sec=document.createElement('section');sec.id=categoria;const h=document.createElement('h2');h.textContent=categoria;sec.append(h);
-  const grade=document.createElement('div');grade.className='grade-produtos';
-  itens.forEach(prato=>{const art=document.createElement('article');art.className='produto';
-   if(prato.imagem){const img=document.createElement('img');img.src='/static/'+prato.imagem;img.alt=prato.nome;art.append(img)}else{const foto=document.createElement('div');foto.className='foto-vazia';foto.textContent='🍽';art.append(foto)}
-   const titulo=document.createElement('h3');titulo.textContent=prato.nome;const desc=document.createElement('p');desc.textContent=prato.descricao;const preco=document.createElement('strong');preco.textContent=prato.precoFormatado;
-   const botao=document.createElement('button');botao.className='botao';botao.textContent='Ver detalhes';botao.onclick=()=>abrirDetalhes(prato);
-   art.append(titulo,desc,preco,botao);grade.append(art)});
-  if(!itens.length){const vazio=document.createElement('p');vazio.textContent='Nenhum produto nesta categoria.';grade.append(vazio)}sec.append(grade);cardapio.append(sec);
- }}
-function abrirDetalhes(prato){const modal=document.getElementById('detalhes');const corpo=document.getElementById('detalhes-corpo');corpo.replaceChildren();
- const titulo=document.createElement('h2');titulo.textContent=prato.nome;const desc=document.createElement('p');desc.textContent=prato.descricao;
- const preco=document.createElement('strong');preco.textContent=prato.precoFormatado;
- const quantidade=document.createElement('input');quantidade.type='number';quantidade.min=1;quantidade.value=1;
- const observacoes=document.createElement('textarea');observacoes.placeholder='Observações (opcional)';
- const adicionar=document.createElement('button');adicionar.className='botao';adicionar.textContent='Adicionar ao carrinho';adicionar.onclick=()=>{adicionarCarrinho(prato,Number(quantidade.value),observacoes.value);modal.close()};
- corpo.append(titulo,desc,preco,quantidade,observacoes,adicionar);modal.showModal();}
-function adicionarCarrinho(prato,quantidade,observacoes){if(!Number.isInteger(quantidade)||quantidade<1)return alert('Quantidade inválida');
- const carrinho=JSON.parse(localStorage.getItem('sabor_clic_carrinho')||'[]');const existente=carrinho.find(x=>x.id===prato.id&&x.observacoes===observacoes);
- if(existente)existente.quantidade+=quantidade;else carrinho.push({id:prato.id,nome:prato.nome,preco:prato.preco,imagem:prato.imagem,quantidade,observacoes});
- localStorage.setItem('sabor_clic_carrinho',JSON.stringify(carrinho));alert('Produto adicionado ao carrinho!')}
-document.getElementById('pesquisa').addEventListener('input',renderizar);
-document.getElementById('fechar-detalhes').onclick=()=>document.getElementById('detalhes').close();mostrarCardapio();
+const cardapioContainer = document.getElementById("cardapio");
+const campoPesquisa = document.getElementById("pesquisa");
+const modalDetalhes = document.getElementById("detalhes");
+const corpoDetalhes = document.getElementById("detalhes-corpo");
+const botaoFecharDetalhes = document.getElementById("fechar-detalhes");
+
+const CATEGORIAS_MENU = ["Pratos", "Bebidas", "Combos", "Sobremesas"];
+const gerenciadorCarrinho = new Carrinho();
+let listaPratos = [];
+
+async function carregarCardapio() {
+    cardapioContainer.textContent = "Carregando cardápio...";
+    try {
+        const resposta = await fetch("/api/pratos");
+        if (!resposta.ok) {
+            throw new Error("Erro ao carregar o cardápio.");
+        }
+        const dados = await resposta.json();
+        listaPratos = dados.map(item => new Prato(item));
+        renderizarCardapio();
+    } catch (erro) {
+        cardapioContainer.textContent = erro.message;
+    }
+}
+
+function renderizarCardapio() {
+    const termoBusca = campoPesquisa ? campoPesquisa.value : "";
+    cardapioContainer.replaceChildren();
+
+    for (const categoria of CATEGORIAS_MENU) {
+        const itensCategoria = listaPratos.filter(
+            prato => prato.categoria === categoria && prato.correspondeBusca(termoBusca)
+        );
+
+        const secao = document.createElement("section");
+        secao.id = categoria;
+
+        const tituloSecao = document.createElement("h2");
+        tituloSecao.textContent = categoria;
+        secao.append(tituloSecao);
+
+        const grade = document.createElement("div");
+        grade.className = "grade-produtos";
+
+        itensCategoria.forEach(prato => {
+            const card = document.createElement("article");
+            card.className = "produto";
+
+            if (prato.imagem) {
+                const img = document.createElement("img");
+                img.src = `/static/${prato.imagem}`;
+                img.alt = prato.nome;
+                card.append(img);
+            } else {
+                const placeholder = document.createElement("div");
+                placeholder.className = "foto-vazia";
+                placeholder.textContent = "🍽";
+                card.append(placeholder);
+            }
+
+            const titulo = document.createElement("h3");
+            titulo.textContent = prato.nome;
+
+            const descricao = document.createElement("p");
+            descricao.textContent = prato.descricao;
+
+            const preco = document.createElement("strong");
+            preco.textContent = prato.precoFormatado;
+
+            const botao = document.createElement("button");
+            botao.className = "botao";
+            botao.type = "button";
+            botao.textContent = "Ver detalhes";
+            botao.onclick = () => abrirDetalhes(prato);
+
+            card.append(titulo, descricao, preco, botao);
+            grade.append(card);
+        });
+
+        if (itensCategoria.length === 0) {
+            const avisoVazio = document.createElement("p");
+            avisoVazio.textContent = "Nenhum produto nesta categoria.";
+            grade.append(avisoVazio);
+        }
+
+        secao.append(grade);
+        cardapioContainer.append(secao);
+    }
+}
+
+function abrirDetalhes(prato) {
+    corpoDetalhes.replaceChildren();
+
+    const titulo = document.createElement("h2");
+    titulo.textContent = prato.nome;
+
+    const descricao = document.createElement("p");
+    descricao.textContent = prato.descricao;
+
+    const preco = document.createElement("strong");
+    preco.textContent = prato.precoFormatado;
+
+    const rotuloQtd = document.createElement("label");
+    rotuloQtd.textContent = "Quantidade";
+    const inputQuantidade = document.createElement("input");
+    inputQuantidade.type = "number";
+    inputQuantidade.min = "1";
+    inputQuantidade.step = "1";
+    inputQuantidade.value = "1";
+    rotuloQtd.append(inputQuantidade);
+
+    const rotuloObs = document.createElement("label");
+    rotuloObs.textContent = "Observações";
+    const campoObservacoes = document.createElement("textarea");
+    campoObservacoes.placeholder = "Ex.: sem cebola, ponto da carne (opcional)";
+    rotuloObs.append(campoObservacoes);
+
+    const botaoAdicionar = document.createElement("button");
+    botaoAdicionar.className = "botao";
+    botaoAdicionar.type = "button";
+    botaoAdicionar.textContent = "Adicionar ao carrinho";
+    botaoAdicionar.onclick = () => {
+        const adicionou = adicionarAoCarrinho(
+            prato,
+            Number(inputQuantidade.value),
+            campoObservacoes.value
+        );
+        if (adicionou) {
+            modalDetalhes.close();
+        }
+    };
+
+    corpoDetalhes.append(titulo, descricao, preco, rotuloQtd, rotuloObs, botaoAdicionar);
+    modalDetalhes.showModal();
+}
+
+function adicionarAoCarrinho(prato, quantidade, observacoes) {
+    try {
+        gerenciadorCarrinho.carregar();
+        gerenciadorCarrinho.adicionar(prato, quantidade, observacoes);
+        alert("Produto adicionado ao carrinho!");
+        return true;
+    } catch (erro) {
+        alert(erro.message || "Quantidade inválida.");
+        return false;
+    }
+}
+
+if (campoPesquisa) {
+    campoPesquisa.addEventListener("input", renderizarCardapio);
+}
+
+if (botaoFecharDetalhes) {
+    botaoFecharDetalhes.onclick = () => modalDetalhes.close();
+}
+
+carregarCardapio();

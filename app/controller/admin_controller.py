@@ -2,10 +2,18 @@ import uuid
 from pathlib import Path
 from flask import Blueprint, render_template, jsonify, request, current_app
 from werkzeug.utils import secure_filename
-from app.middleware import permissao_obrigatoria
-from app.db import conectar
+from app.middleware import (
+    permissao_obrigatoria,
+    limpar_texto,
+    nome_prato_valido,
+    converter_preco,
+    converter_ativo,
+    CATEGORIAS_VALIDAS
+)
 from app.model.prato import Prato
 from app.model.cliente import Cliente
+from app.model.pedido import Pedido
+from app.model.bancada import Bancada
 
 admin_bp = Blueprint("admin", __name__)
 EXTENSOES = {"jpg", "jpeg", "png", "webp"}
@@ -34,19 +42,18 @@ def painel():
 @permissao_obrigatoria("administrador")
 def pratos():
     if request.method == "GET":
-        con = conectar()
-        dados = [dict(x) for x in con.execute("SELECT * FROM pratos ORDER BY id DESC")]
-        con.close()
-        return jsonify(dados)
+        return jsonify(Prato.listar_todos())
     try:
-        dados = request.form
-        nome = dados.get("nome", "").strip()
-        descricao = dados.get("descricao", "").strip()
-        preco = float(dados.get("preco", "0").replace(",", "."))
-        categoria = dados.get("categoria", "Pratos")
-        if not nome or not descricao or preco <= 0 or categoria not in ("Pratos", "Bebidas", "Combos", "Sobremesas"):
+        dados = request.form if request.form else (request.get_json(silent=True) or {})
+        nome = limpar_texto(dados.get("nome", ""))
+        descricao = limpar_texto(dados.get("descricao", ""))
+        preco = converter_preco(dados.get("preco"))
+        categoria = limpar_texto(dados.get("categoria", "Pratos")) or "Pratos"
+        if not nome_prato_valido(nome):
+            raise ValueError("O nome do prato deve ter entre 3 e 120 caracteres.")
+        if not descricao or categoria not in CATEGORIAS_VALIDAS:
             raise ValueError("Confira os dados do produto.")
-        imagem = salvar_foto(request.files.get("imagem"))
+        imagem = salvar_foto(request.files.get("imagem")) if request.files else None
         novo = Prato.cadastrar(nome, descricao, preco, categoria, imagem)
         return jsonify({"id": novo, "mensagem": "Produto cadastrado!"}), 201
     except (ValueError, TypeError) as erro:
@@ -64,18 +71,21 @@ def editar_prato(id):
         return jsonify({"mensagem": "Produto desativado"})
     dados = request.get_json(silent=True) or {}
     try:
-        nome = str(dados.get("nome", prato["nome"])).strip()
-        descricao = str(dados.get("descricao", prato["descricao"])).strip()
-        preco = float(dados.get("preco", prato["preco"]))
-        categoria = dados.get("categoria", prato["categoria"])
-        if not nome or not descricao or preco <= 0 or categoria not in ("Pratos", "Bebidas", "Combos", "Sobremesas"):
+        nome = limpar_texto(dados.get("nome", prato["nome"]))
+        descricao = limpar_texto(dados.get("descricao", prato["descricao"]))
+        preco = converter_preco(dados.get("preco", prato["preco"]))
+        categoria = limpar_texto(dados.get("categoria", prato["categoria"])) or prato["categoria"]
+        ativo = converter_ativo(dados.get("ativo"), prato["ativo"])
+        if not nome_prato_valido(nome):
+            raise ValueError("O nome do prato deve ter entre 3 e 120 caracteres.")
+        if not descricao or categoria not in CATEGORIAS_VALIDAS:
             raise ValueError("Dados inválidos")
-        Prato.atualizar(id, nome, descricao, preco, int(bool(dados.get("ativo", prato["ativo"]))), categoria)
+        Prato.atualizar(id, nome, descricao, preco, ativo, categoria)
         return jsonify({"mensagem": "Produto atualizado"})
     except (ValueError, TypeError) as erro:
         return jsonify({"erro": str(erro)}), 400
 
-#add de novos cozinheiros diretamente do site
+
 @admin_bp.route("/api/admin/funcionarios", methods=["POST"])
 @permissao_obrigatoria("administrador")
 def cadastrar_funcionario():
@@ -96,8 +106,29 @@ def cadastrar_funcionario():
 @admin_bp.route("/api/admin/relatorio")
 @permissao_obrigatoria("administrador")
 def relatorio():
-    con = conectar()
-    resumo = dict(con.execute("SELECT COUNT(*) AS pedidos, COALESCE(SUM(total),0) AS faturamento FROM pedidos").fetchone())
-    resumo["funcionarios"] = [dict(x) for x in con.execute("SELECT id,nome,email,tipo FROM clientes WHERE tipo IN ('administrador','cozinheiro')")]
-    con.close()
+    resumo = Pedido.resumo_vendas()
+    resumo["funcionarios"] = Cliente.listar_funcionarios()
+    resumo["bancadas"] = Bancada.listar()
+    resumo["reservas_bancadas"] = Bancada.listar_reservas()
     return jsonify(resumo)
+
+
+@admin_bp.route("/api/bancadas/<int:id>", methods=["PUT"])
+@admin_bp.route("/api/admin/bancadas/<int:id>", methods=["PUT"])
+@permissao_obrigatoria("administrador")
+def atualizar_bancada(id):
+    dados = request.get_json(silent=True) or {}
+    try:
+        bancada = Bancada.buscar(id)
+        if not bancada:
+            return jsonify({"erro": "Bancada não encontrada."}), 404
+        Bancada.atualizar(
+            id,
+            dados.get("valor_hora", bancada["valor_hora"]),
+            dados.get("valor_caucao", bancada["valor_caucao"]),
+            dados.get("descricao", bancada["descricao"]),
+            dados.get("status_operacional", bancada["status_operacional"])
+        )
+        return jsonify({"mensagem": "Bancada atualizada com sucesso."}), 200
+    except (ValueError, TypeError) as erro:
+        return jsonify({"erro": str(erro)}), 400

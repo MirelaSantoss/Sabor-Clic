@@ -1,10 +1,10 @@
 USE sabor_e_clic;
---senha_hash é grande e esquisita pq está criptografada já para entrar nos requisitos de segurança
+
 INSERT INTO Usuario (id_usuario, nome, email, senha_hash, tipo_perfil, telefone) VALUES
-(1, 'Gustavo Vieira Stoppa', 'gustavo.stoppa@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q1', 'GERENTE', '(11) 98765-4321'),
-(2, 'Luis Fernando Lima de Clares', 'luis.clares@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q2', 'OPERADOR', '(11) 97654-3210'),
-(3, 'Mirela de Fatima Fernandes dos Santos', 'mirela.santos@deliverygourmet.com', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q3', 'CLIENTE', '(11) 96543-2109'),
-(4, 'Lorena Vieira Marques', 'lorena.marques@gmail.com', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q4', 'CLIENTE', '(11) 95432-1098');
+(1, 'Gustavo Vieira Stoppa', 'gustavo.stoppa@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q1a', 'GERENTE', '(11) 98765-4321'),
+(2, 'Luis Fernando Lima de Clares', 'luis.clares@saboreclic.com.br', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q2b', 'OPERADOR', '(11) 97654-3210'),
+(3, 'Mirela de Fatima Fernandes dos Santos', 'mirela.santos@deliverygourmet.com', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q3c', 'CLIENTE', '(11) 96543-2109'),
+(4, 'Lorena Vieira Marques', 'lorena.marques@gmail.com', '$2b$12$e8Y6V.oHq.oQ5u2oJ9C6vOGZ4H7Q4l5O0V1B3J4K5L6M7N8O9P0Q4d', 'CLIENTE', '(11) 95432-1098');
 
 INSERT INTO Categoria (id_categoria, nome, descricao) VALUES
 (1, 'Pratos Executivos', 'Refeições completas individuais para almoço e jantar corporativo'),
@@ -52,6 +52,14 @@ INSERT INTO Lote_Estoque (id_lote, id_ingrediente, numero_lote, qtd_atual, custo
 INSERT INTO Movimento_Estoque (id_ingrediente, id_usuario, tipo_mov, qtd, data_hora, motivo) VALUES
 (1, 1, 'ENTRADA', 20.000, '2026-11-01 08:00:00', 'Entrada inicial de mercadoria conforme NF 1042'),
 (2, 1, 'ENTRADA', 50.000, '2026-10-15 09:30:00', 'Entrada mensal distribuidora cerealista');
+
+INSERT INTO Pedido (id_pedido, id_cliente, data_hora, status_pedido, valor_total, observacoes) VALUES
+(1, 3, '2026-11-10 12:15:00', 'ENTREGUE', 57.00, 'Sem cebola no tempero'),
+(2, 4, '2026-11-11 13:00:00', 'EM_PREPARO', 34.00, 'Queijo parmesão à parte');
+
+INSERT INTO Item_Pedido (id_item_pedido, id_pedido, id_prato, preco_unit, qtd) VALUES
+(1, 1, 1, 28.50, 2),
+(2, 2, 2, 34.00, 1);
 
 INSERT INTO Bancada (id_bancada, cod_identificacao, descricao, valor_hora, valor_caucao, status_operacional) VALUES
 (1, 'BANCADA-01', 'Estação quente com fogão industrial de 6 bocas, chapa e coifa de exaustão', 45.00, 300.00, 'DISPONIVEL'),

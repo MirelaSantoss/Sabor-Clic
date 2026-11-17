@@ -4,14 +4,17 @@ from flask import (
     redirect, url_for, flash, jsonify
 )
 
-import sqlite3
-
 from app.model.cliente import Cliente
-from app.middleware import login_obrigatorio, _destino_padrao
+from app.model.endereco import Endereco
+from app.model.bancada import Bancada
+from app.middleware import (
+    login_obrigatorio, permissao_obrigatoria, _destino_padrao,
+    limpar_texto, email_valido, senha_valida
+)
 
 clientes_bp = Blueprint("cliente", __name__)
-#acabei com o login/administrador e /login/<modo> e a checagem do usuario para inverter a lógica de funil, fazendo com que ficasse cadastrado isso direto no banco de dados
-#login
+
+
 @clientes_bp.route("/login", methods=["GET", "POST"])
 def pagina_login():
     if "usuario_id" in session:
@@ -25,6 +28,7 @@ def pagina_login():
 
         if usuario:
             session.clear()
+            session.permanent = True
             session["usuario_id"] = usuario["id"]
             session["usuario"] = usuario["nome"]
             session["tipo"] = usuario["tipo"]
@@ -36,18 +40,18 @@ def pagina_login():
 
     return render_template("login.html")
 
-#cadastro
+
 @clientes_bp.route("/formulario", methods=["GET", "POST"])
 def cadastro():
     if request.method == "POST":
         dados = {
-            "nome": request.form.get("nome", "").strip(),
-            "telefone": request.form.get("telefone", "").strip(),
-            "cpf": request.form.get("cpf", "").strip(),
-            "data_nascimento": request.form.get("data_nascimento", ""),
-            "email": request.form.get("email", "").strip().lower(),
+            "nome": limpar_texto(request.form.get("nome", "")),
+            "telefone": limpar_texto(request.form.get("telefone", "")),
+            "cpf": limpar_texto(request.form.get("cpf", "")),
+            "data_nascimento": limpar_texto(request.form.get("data_nascimento", "")),
+            "email": limpar_texto(request.form.get("email", "")).lower(),
             "senha": request.form.get("senha", ""),
-            "genero": request.form.get("genero", "")
+            "genero": limpar_texto(request.form.get("genero", ""))
         }
 
         campos_obrigatorios = [
@@ -63,8 +67,12 @@ def cadastro():
             flash("Preencha todos os campos obrigatórios.", "erro")
             return render_template("cadastro.html")
 
-        if len(dados["senha"]) < 8:
-            flash("A senha deve ter pelo menos 8 caracteres.", "erro")
+        if not email_valido(dados["email"]):
+            flash("Informe um e-mail válido com no máximo 120 caracteres.", "erro")
+            return render_template("cadastro.html")
+
+        if not senha_valida(dados["senha"]):
+            flash("A senha deve ter pelo menos 8 caracteres, misturando letras e números.", "erro")
             return render_template("cadastro.html")
 
         try:
@@ -76,14 +84,17 @@ def cadastro():
             flash("Este CPF ou e-mail já está cadastrado.", "erro")
             return render_template("cadastro.html")
 
-        except Exception as erro:
-            print("ERRO NO CADASTRO:", erro)
+        except ValueError as erro:
+            flash(str(erro), "erro")
+            return render_template("cadastro.html")
+
+        except Exception:
             flash("Não foi possível iniciar o cadastro.", "erro")
             return render_template("cadastro.html")
 
     return render_template("cadastro.html")
 
-#"after request" após o usuario apertar o botão de cadastro, verificação se preencheu tudo certinho
+
 @clientes_bp.route("/endereco", methods=["GET", "POST"])
 def pagina_endereco():
     pending_id = session.get("cadastro_pendente_id")
@@ -93,46 +104,44 @@ def pagina_endereco():
         return redirect(url_for("cliente.cadastro"))
 
     if request.method == "POST":
-        endereco = {
-            "rua": request.form.get("rua", "").strip(),
-            "numero": request.form.get("numero", "").strip(),
-            "bairro": request.form.get("bairro", "").strip(),
-            "cidade": request.form.get("cidade", "").strip(),
-            "estado": request.form.get("estado", "").strip(),
-            "cep": request.form.get("cep", "").strip()
-        }
+        obj_endereco = Endereco(
+            request.form.get("rua", ""),
+            request.form.get("numero", ""),
+            request.form.get("bairro", ""),
+            request.form.get("cidade", ""),
+            request.form.get("estado", ""),
+            request.form.get("cep", "")
+        )
 
-        if not all(endereco.values()):
+        if not obj_endereco.valido():
             flash("Preencha todos os campos do endereço.", "erro")
             return render_template("endereco.html")
 
         try:
-            Cliente.cadastrar(pending_id, endereco)
+            Cliente.cadastrar(pending_id, obj_endereco)
             session.pop("cadastro_pendente_id", None)
             flash("Cadastro realizado com sucesso! Faça seu login.", "sucesso")
             return redirect(url_for("cliente.pagina_login"))
 
-        except sqlite3.IntegrityError as erro:
-            print("ERRO DE INTEGRIDADE:", erro)
+        except sqlite3.IntegrityError:
             session.pop("cadastro_pendente_id", None)
             flash("Este CPF ou e-mail já está cadastrado.", "erro")
             return redirect(url_for("cliente.cadastro"))
 
-        except Exception as erro:
-            print("ERRO NO CADASTRO:", erro)
+        except Exception:
             flash("Não foi possível realizar o cadastro.", "erro")
             return render_template("endereco.html")
 
     return render_template("endereco.html")
 
-#logout
+
 @clientes_bp.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("Você saiu da sua conta.", "sucesso")
     return redirect(url_for("cliente.pagina_login"))
 
-#rota para achar a conta
+
 @clientes_bp.route("/minha-conta", methods=["GET"])
 @login_obrigatorio
 def minha_conta():
@@ -144,8 +153,41 @@ def minha_conta():
 
     return jsonify(dict(usuario)), 200
 
-#carrinho
+
 @clientes_bp.route("/carrinho", methods=["GET"])
-@login_obrigatorio
+@permissao_obrigatoria("cliente")
 def carrinho():
     return render_template("carrinho.html")
+
+
+@clientes_bp.route("/api/bancadas", methods=["GET"])
+def listar_bancadas():
+    apenas_disp = session.get("tipo") != "administrador"
+    return jsonify(Bancada.listar(apenas_disponiveis=apenas_disp)), 200
+
+
+@clientes_bp.route("/api/bancadas/reservas", methods=["GET", "POST"])
+@login_obrigatorio
+def reservas_bancadas():
+    if request.method == "GET":
+        if session.get("tipo") == "administrador":
+            return jsonify(Bancada.listar_reservas()), 200
+        if session.get("tipo") == "cliente":
+            return jsonify(Bancada.listar_reservas(session["usuario_id"])), 200
+        return jsonify({"erro": "Você não possui permissão para esta ação."}), 403
+
+    if session.get("tipo") != "cliente":
+        return jsonify({"erro": "Somente clientes podem agendar bancadas."}), 403
+
+    dados = request.get_json(silent=True) or {}
+    try:
+        bancada_id = dados.get("id_bancada", dados.get("bancada_id"))
+        inicio = dados.get("data_hora_inicio", "")
+        fim = dados.get("data_hora_fim", "")
+        if not bancada_id or not inicio or not fim:
+            raise ValueError("Informe a bancada, data/hora de início e data/hora de fim.")
+        resultado = Bancada.criar_reserva(session["usuario_id"], bancada_id, inicio, fim)
+        resultado["mensagem"] = "Reserva de bancada confirmada com sucesso!"
+        return jsonify(resultado), 201
+    except (ValueError, TypeError) as erro:
+        return jsonify({"erro": str(erro)}), 400

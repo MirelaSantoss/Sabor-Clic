@@ -16,16 +16,15 @@ pedido_bp = Blueprint("pedido_controller", __name__)
 
 
 @pedido_bp.route("/pedido", methods=["GET"])
-@login_obrigatorio
+@permissao_obrigatoria("cliente")
 def pagina_pedidos():
-
     return render_template("pedidos.html")
 
 
 @pedido_bp.route("/pedidos", methods=["POST"])
+@pedido_bp.route("/api/pedidos", methods=["POST"])
 @login_obrigatorio
 def criar_pedido():
-
     dados = request.get_json(silent=True) or {}
 
     if session.get("tipo") != "cliente":
@@ -39,10 +38,10 @@ def criar_pedido():
         }), 400
 
     try:
-
         pedido_id = Pedido.criar(
             session["usuario_id"],
-            itens
+            itens,
+            dados.get("observacoes")
         )
 
         return jsonify({
@@ -50,16 +49,21 @@ def criar_pedido():
             "pedido_id": pedido_id
         }), 201
 
-    except (ValueError, TypeError, KeyError, sqlite3.IntegrityError):
+    except (sqlite3.IntegrityError, sqlite3.OperationalError) as erro:
+        if "Estoque insuficiente" in str(erro):
+            return jsonify({"erro": "Estoque insuficiente para um ou mais itens do pedido."}), 400
+        return jsonify({"erro": "Os itens ou as quantidades são inválidos."}), 400
+
+    except (ValueError, TypeError, KeyError):
         return jsonify({
             "erro": "Os itens ou as quantidades são inválidos."
         }), 400
 
 
 @pedido_bp.route("/pedidos", methods=["GET"])
+@pedido_bp.route("/api/pedidos", methods=["GET"])
 @login_obrigatorio
 def listar_pedidos():
-
     if session.get("tipo") in ("administrador", "cozinheiro"):
         pedidos = Pedido.listar()
     else:
@@ -73,10 +77,22 @@ def listar_pedidos():
     return jsonify(resultado), 200
 
 
+@pedido_bp.route("/api/pedidos/fila", methods=["GET"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def fila_pedidos():
+    pedidos = Pedido.listar()
+    resultado = []
+    for pedido in pedidos:
+        dados = dict(pedido)
+        dados["itens"] = Pedido.itens_do_pedido(pedido["id"])
+        resultado.append(dados)
+    return jsonify(resultado), 200
+
+
 @pedido_bp.route("/pedidos/<int:id>/status", methods=["PUT"])
+@pedido_bp.route("/api/pedidos/<int:id>/status", methods=["PUT"])
 @permissao_obrigatoria("cozinheiro", "administrador")
 def atualizar_status(id):
-
     dados = request.get_json(silent=True) or {}
 
     status = dados.get("status")
@@ -84,7 +100,8 @@ def atualizar_status(id):
     status_permitidos = [
         "Aguardando",
         "Iniciando Preparo",
-        "Pronto para Entrega"
+        "Pronto para Entrega",
+        "Entregue"
     ]
 
     if status not in status_permitidos:
@@ -108,16 +125,17 @@ def atualizar_status(id):
 @pedido_bp.route("/cozinheiro", methods=["GET"])
 @permissao_obrigatoria("cozinheiro", "administrador")
 def pagina_cozinheiro():
-
     return render_template("kds.html")
 
+
 @pedido_bp.route("/pedidos/<int:id>/tempo", methods=["PUT"])
+@pedido_bp.route("/api/pedidos/<int:id>/tempo", methods=["PUT"])
 @permissao_obrigatoria("cozinheiro", "administrador")
 def definir_tempo_preparo(id):
     dados = request.get_json(silent=True) or {}
     try:
         minutos = int(dados.get("minutos"))
-        if minutos < 1 or minutos > 480:
+        if isinstance(dados.get("minutos"), bool) or minutos < 1 or minutos > 480:
             raise ValueError()
     except (TypeError, ValueError):
         return jsonify({"erro": "Informe um tempo entre 1 e 480 minutos."}), 400

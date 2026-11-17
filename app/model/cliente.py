@@ -1,6 +1,9 @@
+import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.db import conectar
+from app.model.endereco import Endereco
+from app.middleware import limpar_texto, email_valido, senha_valida
 
 
 class Cliente:
@@ -9,29 +12,56 @@ class Cliente:
 
     @staticmethod
     def criar_cadastro_pendente(dados):
+        nome = limpar_texto(dados.get("nome"))
+        telefone = limpar_texto(dados.get("telefone"))
+        cpf = limpar_texto(dados.get("cpf"))
+        data_nascimento = limpar_texto(dados.get("data_nascimento"))
+        email = limpar_texto(dados.get("email")).lower()
+        senha = dados.get("senha") or ""
+        genero = limpar_texto(dados.get("genero")) or None
+
+        if not all([nome, telefone, cpf, data_nascimento, email, senha]):
+            raise ValueError("Preencha todos os campos obrigatórios.")
+
+        if not email_valido(email):
+            raise ValueError("Informe um e-mail válido com no máximo 120 caracteres.")
+
+        if not senha_valida(senha):
+            raise ValueError("A senha deve ter pelo menos 8 caracteres, misturando letras e números.")
+
         conexao = conectar()
 
         try:
-            email = dados["email"].strip().lower()
-            senha_hash = generate_password_hash(dados["senha"])
+            existente = conexao.execute(
+                "SELECT id FROM clientes WHERE email = ? OR cpf = ?",
+                (email, cpf)
+            ).fetchone()
+
+            if existente is not None:
+                raise sqlite3.IntegrityError("CPF ou e-mail já cadastrado.")
+
+            conexao.execute(
+                "DELETE FROM cadastros_pendentes WHERE email = ? OR cpf = ?",
+                (email, cpf)
+            )
+
+            senha_hash = generate_password_hash(senha)
 
             cursor = conexao.execute("""
                 INSERT INTO cadastros_pendentes
-                (nome, telefone, cpf, data_nascimento,
-                 email, senha_hash, genero)
+                (nome, telefone, cpf, data_nascimento, email, senha_hash, genero)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
-                dados["nome"].strip(),
-                dados["telefone"].strip(),
-                dados["cpf"].strip(),
-                dados["data_nascimento"],
+                nome,
+                telefone,
+                cpf,
+                data_nascimento,
                 email,
                 senha_hash,
-                dados.get("genero")
+                genero
             ))
 
             conexao.commit()
-
             return cursor.lastrowid
 
         except Exception:
@@ -42,14 +72,30 @@ class Cliente:
             conexao.close()
 
     @staticmethod
-    def cadastrar(pending_id, endereco):
+    def cadastrar(pending_id, dados_endereco):
+        obj_endereco = (
+            dados_endereco
+            if isinstance(dados_endereco, Endereco)
+            else Endereco(
+                dados_endereco.get("rua"),
+                dados_endereco.get("numero"),
+                dados_endereco.get("bairro"),
+                dados_endereco.get("cidade"),
+                dados_endereco.get("estado"),
+                dados_endereco.get("cep")
+            )
+        )
+
+        if not obj_endereco.valido():
+            raise ValueError("Preencha todos os campos do endereço.")
+
         conexao = conectar()
 
         try:
-            pendente = conexao.execute("""
-                SELECT * FROM cadastros_pendentes
-                WHERE id = ?
-            """, (pending_id,)).fetchone()
+            pendente = conexao.execute(
+                "SELECT * FROM cadastros_pendentes WHERE id = ?",
+                (pending_id,)
+            ).fetchone()
 
             if pendente is None:
                 raise ValueError("Cadastro temporário não encontrado.")
@@ -58,21 +104,13 @@ class Cliente:
                 INSERT INTO enderecos
                 (rua, numero, bairro, cidade, estado, cep)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                endereco["rua"],
-                endereco["numero"],
-                endereco["bairro"],
-                endereco["cidade"],
-                endereco["estado"],
-                endereco["cep"]
-            ))
+            """, obj_endereco.tupla())
 
             endereco_id = cursor.lastrowid
 
             cursor = conexao.execute("""
                 INSERT INTO clientes
-                (nome, telefone, cpf, data_nascimento,
-                 email, senha, genero, tipo, endereco_id)
+                (nome, telefone, cpf, data_nascimento, email, senha, genero, tipo, endereco_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'cliente', ?)
             """, (
                 pendente["nome"],
@@ -85,13 +123,12 @@ class Cliente:
                 endereco_id
             ))
 
-            conexao.execute("""
-                DELETE FROM cadastros_pendentes
-                WHERE id = ?
-            """, (pending_id,))
+            conexao.execute(
+                "DELETE FROM cadastros_pendentes WHERE id = ?",
+                (pending_id,)
+            )
 
             conexao.commit()
-
             return cursor.lastrowid
 
         except Exception:
@@ -106,19 +143,21 @@ class Cliente:
         if tipo not in ("cozinheiro", "administrador"):
             raise ValueError("Tipo de funcionário inválido.")
 
-        nome = (nome or "").strip()
-        email = (email or "").strip().lower()
-        telefone = (telefone or "").strip() or None
+        nome_limpo = limpar_texto(nome)
+        email_limpo = limpar_texto(email).lower()
+        telefone_limpo = limpar_texto(telefone) or None
 
-        if not nome or "@" not in email or len(senha or "") < 8:
-            raise ValueError("Informe nome, e-mail válido e senha com pelo menos 8 caracteres.")
+        if not nome_limpo or not email_valido(email_limpo) or not senha_valida(senha or ""):
+            raise ValueError(
+                "Informe nome, e-mail válido (até 120 caracteres) e senha com pelo menos 8 caracteres misturando letras e números."
+            )
 
         conexao = conectar()
 
         try:
             existente = conexao.execute(
                 "SELECT id FROM clientes WHERE email = ?",
-                (email,)
+                (email_limpo,)
             ).fetchone()
 
             if existente:
@@ -130,7 +169,7 @@ class Cliente:
                 INSERT INTO clientes
                 (nome, telefone, cpf, data_nascimento, email, senha, tipo)
                 VALUES (?, ?, NULL, NULL, ?, ?, ?)
-            """, (nome, telefone, email, senha_hash, tipo))
+            """, (nome_limpo, telefone_limpo, email_limpo, senha_hash, tipo))
 
             conexao.commit()
             return cursor.lastrowid
@@ -139,6 +178,20 @@ class Cliente:
             conexao.rollback()
             raise
 
+        finally:
+            conexao.close()
+
+    @staticmethod
+    def listar_funcionarios():
+        conexao = conectar()
+        try:
+            linhas = conexao.execute("""
+                SELECT id, nome, email, tipo, telefone
+                FROM clientes
+                WHERE tipo IN ('administrador', 'cozinheiro')
+                ORDER BY id
+            """).fetchall()
+            return [dict(linha) for linha in linhas]
         finally:
             conexao.close()
 

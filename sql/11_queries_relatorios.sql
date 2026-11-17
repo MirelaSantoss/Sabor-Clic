@@ -1,5 +1,5 @@
 USE sabor_e_clic;
---calcular o total de pedidos feitos, o faturamento bruto e o ticket médio(vulgo a média do valor dos pedidos)
+
 SELECT 
     DATE(p.data_hora) AS data_venda,
     COUNT(DISTINCT p.id_pedido) AS total_pedidos,
@@ -10,7 +10,6 @@ WHERE p.status_pedido NOT IN ('CANCELADO')
 GROUP BY DATE(p.data_hora)
 ORDER BY data_venda DESC;
 
--- verificação recorente da qtd de itens em estoque e emitir alertas quando necessário
 SELECT 
     i.id_ingrediente,
     i.nome AS ingrediente,
@@ -28,7 +27,6 @@ GROUP BY i.id_ingrediente, i.nome, i.unidade_medida, i.estoque_minimo
 HAVING estoque_disponivel <= i.estoque_minimo
 ORDER BY estoque_disponivel ASC;
 
--- calculo do lucro bruto por prato e a margem de lucro do mesmo em %
 SELECT 
     pr.id_prato,
     pr.nome AS nome_prato,
@@ -48,7 +46,6 @@ INNER JOIN (
 GROUP BY pr.id_prato, pr.nome, c.nome, pr.preco_venda
 ORDER BY lucro_bruto_porcao DESC;
 
--- saber qual bancada tá sendo mais produtiva (retorno financeiro e quantidade de horas q cada uma foi utilizada)
 SELECT 
     b.cod_identificacao,
     b.descricao,

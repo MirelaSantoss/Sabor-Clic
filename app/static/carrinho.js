@@ -1,43 +1,105 @@
 const divCarrinho = document.getElementById("carrinho");
-const dinheiro = valor => Number(valor).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
-function obterCarrinho() { return JSON.parse(localStorage.getItem("sabor_clic_carrinho") || "[]"); }
-function salvarCarrinho(itens) { localStorage.setItem("sabor_clic_carrinho", JSON.stringify(itens)); mostrarCarrinho(); }
+const elementoSubtotal = document.getElementById("subtotal");
+const botaoFinalizar = document.getElementById("finalizar");
+
+const carrinho = new Carrinho();
+
 function mostrarCarrinho() {
-    const carrinho = obterCarrinho(); divCarrinho.innerHTML = "";
-    let subtotal = 0;
-    if (!carrinho.length) divCarrinho.textContent = "Seu carrinho está vazio.";
-    carrinho.forEach(function(item, indice) {
-        subtotal += item.preco * item.quantidade;
-        const div = document.createElement("div"); div.className="item-carrinho";
-        const titulo = document.createElement("h3"); titulo.textContent = item.nome;
-        const detalhes = document.createElement("p"); detalhes.textContent = `${item.quantidade} x ${dinheiro(item.preco)}`;
-        const menos = document.createElement("button"); menos.textContent = "Diminuir";
-        menos.onclick = function() { alterarQuantidade(indice, -1); };
-        const mais = document.createElement("button"); mais.textContent = "Aumentar";
-        mais.onclick = function() { alterarQuantidade(indice, 1); };
-        const remover = document.createElement("button"); remover.textContent = "Remover";
-        remover.onclick = function() { salvarCarrinho(obterCarrinho().filter((i, n) => n !== indice)); };
-        div.append(titulo, detalhes, menos, mais, remover); divCarrinho.appendChild(div);
+    carrinho.carregar();
+    divCarrinho.replaceChildren();
+
+    if (carrinho.vazio) {
+        divCarrinho.textContent = "Seu carrinho está vazio.";
+    }
+
+    carrinho.itens.forEach((item, indice) => {
+        const container = document.createElement("div");
+        container.className = "item-carrinho";
+
+        const infoContainer = document.createElement("div");
+        infoContainer.style.flex = "1";
+
+        const titulo = document.createElement("h3");
+        titulo.textContent = item.nome;
+        infoContainer.append(titulo);
+
+        if (item.observacoes) {
+            const obs = document.createElement("small");
+            obs.textContent = `Obs.: ${item.observacoes}`;
+            infoContainer.append(obs);
+        }
+
+        const detalhes = document.createElement("p");
+        detalhes.textContent = `${item.quantidade} × ${Prato.formatarMoeda(item.preco)} = ${item.subtotalFormatado}`;
+
+        const botaoMenos = document.createElement("button");
+        botaoMenos.type = "button";
+        botaoMenos.textContent = "Diminuir";
+        botaoMenos.onclick = () => {
+            carrinho.alterarQuantidade(indice, -1);
+            mostrarCarrinho();
+        };
+
+        const botaoMais = document.createElement("button");
+        botaoMais.type = "button";
+        botaoMais.textContent = "Aumentar";
+        botaoMais.onclick = () => {
+            carrinho.alterarQuantidade(indice, 1);
+            mostrarCarrinho();
+        };
+
+        const botaoRemover = document.createElement("button");
+        botaoRemover.type = "button";
+        botaoRemover.textContent = "Remover";
+        botaoRemover.onclick = () => {
+            carrinho.remover(indice);
+            mostrarCarrinho();
+        };
+
+        container.append(infoContainer, detalhes, botaoMenos, botaoMais, botaoRemover);
+        divCarrinho.appendChild(container);
     });
-    document.getElementById("subtotal").textContent = `Subtotal: ${dinheiro(subtotal)}`;
-    document.getElementById("finalizar").disabled = carrinho.length === 0;
+
+    elementoSubtotal.textContent = `Subtotal: ${carrinho.subtotalFormatado}`;
+    botaoFinalizar.disabled = carrinho.vazio;
 }
-function alterarQuantidade(indice, diferenca) {
-    const carrinho = obterCarrinho(); const item = carrinho[indice];
-    if (item) item.quantidade += diferenca;
-    salvarCarrinho(carrinho.filter(i => i.quantidade > 0));
-}
+
 async function finalizarPedido() {
-    const itens = obterCarrinho().map(item => ({prato_id:item.id, quantidade:item.quantidade, observacoes:item.observacoes||""}));
+    carrinho.carregar();
+    if (carrinho.vazio) {
+        return;
+    }
+
+    botaoFinalizar.disabled = true;
+    const textoOriginal = botaoFinalizar.textContent;
+    botaoFinalizar.textContent = "Enviando pedido...";
+
     try {
-        const resposta = await fetch("/pedidos", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({itens})});
-        if (resposta.redirected) { window.location.href = resposta.url; return; }
+        const resposta = await fetch("/pedidos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(carrinho.paraPayload())
+        });
+
+        if (resposta.redirected) {
+            window.location.href = resposta.url;
+            return;
+        }
+
         const dados = await resposta.json();
-        if (!resposta.ok) throw new Error(dados.erro || "Erro ao enviar pedido.");
-        localStorage.removeItem("sabor_clic_carrinho");
-        alert(`Pedido #${dados.pedido_id} realizado!`);
+        if (!resposta.ok) {
+            throw new Error(dados.erro || "Erro ao enviar pedido.");
+        }
+
+        carrinho.limpar();
+        alert(`Pedido #${dados.pedido_id} realizado com sucesso!`);
         window.location.href = "/pedido";
-    } catch (erro) { alert(erro.message); }
+    } catch (erro) {
+        alert(erro.message);
+        botaoFinalizar.disabled = false;
+        botaoFinalizar.textContent = textoOriginal;
+    }
 }
-document.getElementById("finalizar").addEventListener("click", finalizarPedido);
+
+botaoFinalizar.addEventListener("click", finalizarPedido);
 mostrarCarrinho();

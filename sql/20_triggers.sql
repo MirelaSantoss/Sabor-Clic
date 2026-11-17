@@ -2,17 +2,20 @@ USE sabor_e_clic;
 
 DELIMITER $$
 
---desconto automatico de insumos usados em cada prato pedido por cliente
 CREATE TRIGGER trg_baixa_estoque_item_pedido
 AFTER INSERT ON Item_Pedido
 FOR EACH ROW
 BEGIN
     UPDATE Lote_Estoque le
     INNER JOIN Composto_por cp ON le.id_ingrediente = cp.id_ingrediente
-    --GREATEST = impedir q o saldo de itens fique negativo
+    INNER JOIN (
+        SELECT id_ingrediente, MIN(id_lote) AS id_lote_peps
+        FROM Lote_Estoque
+        WHERE qtd_atual > 0.000
+        GROUP BY id_ingrediente
+    ) lote_prioritario ON le.id_lote = lote_prioritario.id_lote_peps
     SET le.qtd_atual = GREATEST(0.000, le.qtd_atual - (cp.qtd_necessaria * NEW.qtd))
-    WHERE cp.id_prato = NEW.id_prato
-      AND le.qtd_atual > 0.000;
+    WHERE cp.id_prato = NEW.id_prato;
 
     INSERT INTO Movimento_Estoque (
         id_ingrediente,
@@ -32,10 +35,8 @@ BEGIN
     FROM Composto_por cp
     INNER JOIN Pedido p ON p.id_pedido = NEW.id_pedido
     WHERE cp.id_prato = NEW.id_prato;
-
 END$$
 
--- atualiza o valor total do pedido a cada novo item q entrar no "carrinho"
 CREATE TRIGGER trg_atualiza_valor_total_pedido
 AFTER INSERT ON Item_Pedido
 FOR EACH ROW

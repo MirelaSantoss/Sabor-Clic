@@ -1,42 +1,59 @@
-import sqlite3
-import os
+from app.db import conectar, criar_tabelas, DB_PATH
 
-caminho_banco = os.path.join(os.path.dirname(__file__), 'sabor_clic.db')
-print(f"Banco consultado: {caminho_banco}")
 
-conexao = sqlite3.connect(caminho_banco)
-cursor = conexao.cursor()
+def verificar_banco():
+    criar_tabelas()
+    print(f"Banco consultado: {DB_PATH}")
 
-#criação da tabela Usuario caso ainda ñ exista
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS Usuario (
-    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    senha_hash TEXT NOT NULL,
-    tipo_perfil TEXT NOT NULL CHECK(tipo_perfil IN ('CLIENTE', 'OPERADOR', 'GERENTE')),
-    telefone TEXT,
-    data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-""")
+    conexao = conectar()
+    cursor = conexao.cursor()
 
-#inserção de teste caso esteja vazia
-cursor.execute("SELECT COUNT(*) FROM Usuario;")
-if cursor.fetchone()[0] == 0:
-    cursor.execute("""
-    INSERT INTO Usuario (nome, email, senha_hash, tipo_perfil, telefone)
-    VALUES ('Gustavo Vieira Stoppa', 'gustavo.stoppa@saboreclic.com.br', '$2b$12$hash', 'GERENTE', '(11) 98765-4321');
-    """)
+    cursor.execute("DROP TABLE IF EXISTS Usuario")
     conexao.commit()
 
-#consulta com a nomenclatura correta
-usuarios = cursor.execute("""
-    SELECT id_usuario, nome, email, tipo_perfil
-    FROM Usuario;
-""").fetchall()
+    tabelas = [
+        r["name"]
+        for r in cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        ).fetchall()
+    ]
+    triggers = [
+        r["name"]
+        for r in cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name"
+        ).fetchall()
+    ]
 
-print("\nutilizadores encontrados:")
-for u in usuarios:
-    print(f"ID: {u[0]} / Nome: {u[1]} / Email: {u[2]} / Perfil: {u[3]}")
+    print(f"\nTabelas ativas ({len(tabelas)}): {', '.join(tabelas)}")
+    print(f"Triggers ativas ({len(triggers)}): {', '.join(triggers)}")
 
-conexao.close()
+    usuarios = cursor.execute(
+        "SELECT id, nome, email, tipo FROM clientes ORDER BY id"
+    ).fetchall()
+    print(f"\nUsuários cadastrados ({len(usuarios)}):")
+    for u in usuarios:
+        print(f"  ID: {u['id']} | Nome: {u['nome']} | E-mail: {u['email']} | Perfil: {u['tipo']}")
+
+    pratos = cursor.execute(
+        "SELECT id, nome, categoria, preco, ativo FROM pratos ORDER BY id"
+    ).fetchall()
+    print(f"\nPratos cadastrados ({len(pratos)}):")
+    for p in pratos:
+        status = "Ativo" if p["ativo"] else "Inativo"
+        print(f"  ID: {p['id']} | {p['nome']} ({p['categoria']}) | R$ {p['preco']:.2f} | {status}")
+
+    bancadas = cursor.execute(
+        "SELECT id, cod_identificacao, valor_hora, valor_caucao, status_operacional FROM bancadas ORDER BY id"
+    ).fetchall()
+    print(f"\nBancadas cadastradas ({len(bancadas)}):")
+    for b in bancadas:
+        print(
+            f"  ID: {b['id']} | {b['cod_identificacao']} | "
+            f"Hora: R$ {b['valor_hora']:.2f} | Caução: R$ {b['valor_caucao']:.2f} | {b['status_operacional']}"
+        )
+
+    conexao.close()
+
+
+if __name__ == "__main__":
+    verificar_banco()

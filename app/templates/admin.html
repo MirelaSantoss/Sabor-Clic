@@ -2,13 +2,17 @@
 {% block conteudo %}
 <section class="pagina">
     <h1>Painel administrativo</h1>
-    <p>Gerencie produtos, funcionários e acompanhe os pedidos.</p>
+    <p>Gerencie produtos do cardápio, bancadas gastronômicas, funcionários e vendas.</p>
     <div class="painel-duplo">
         <section class="form-card">
             <h2>Cadastrar produto</h2>
             <form id="form-produto" enctype="multipart/form-data">
-                <label>Nome<input name="nome" required></label>
-                <label>Descrição<textarea name="descricao" required></textarea></label>
+                <label>Nome (3 a 120 caracteres)
+                    <input name="nome" minlength="3" maxlength="120" required>
+                </label>
+                <label>Descrição
+                    <textarea name="descricao" required></textarea>
+                </label>
                 <label>Categoria
                     <select name="categoria">
                         <option>Pratos</option>
@@ -17,8 +21,12 @@
                         <option>Sobremesas</option>
                     </select>
                 </label>
-                <label>Preço (R$)<input name="preco" type="number" step="0.01" min="0.01" required></label>
-                <label>Foto do produto<input name="imagem" type="file" accept="image/png,image/jpeg,image/webp"></label>
+                <label>Preço (R$)
+                    <input name="preco" type="number" step="0.01" min="0.01" required>
+                </label>
+                <label>Foto do produto
+                    <input name="imagem" type="file" accept="image/png,image/jpeg,image/webp">
+                </label>
                 <button class="botao" type="submit">Cadastrar prato</button>
             </form>
             <p id="mensagem-admin" role="status"></p>
@@ -32,13 +40,26 @@
         <h2>Resumo de vendas</h2>
         <div id="resumo-admin"></div>
     </section>
+    <section>
+        <h2>Bancadas gastronômicas (Preço/Hora e Caução)</h2>
+        <div id="bancadas-admin" class="lista"></div>
+    </section>
     <div class="painel-duplo">
         <section class="form-card">
             <h2>Cadastrar funcionário</h2>
             <form id="form-funcionario">
-                <label>Nome<input name="nome" required></label>
-                <label>E-mail<input name="email" type="email" required></label>
-                <label>Senha<input name="senha" type="password" minlength="8" required></label>
+                <label>Nome
+                    <input name="nome" required>
+                </label>
+                <label>E-mail
+                    <input name="email" type="email" maxlength="120" required>
+                </label>
+                <label>Telefone / WhatsApp
+                    <input name="telefone" type="text">
+                </label>
+                <label>Senha (mínimo 8 caracteres, letras e números)
+                    <input name="senha" type="password" minlength="8" required>
+                </label>
                 <label>Perfil
                     <select name="tipo">
                         <option value="cozinheiro">Cozinheiro</option>
@@ -55,5 +76,5 @@
         </section>
     </div>
 </section>
-<script src="{{ url_for('static',filename='admin.js') }}"></script>
+<script src="{{ url_for('static', filename='admin.js') }}"></script>
 {% endblock %}
