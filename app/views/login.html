@@ -1,0 +1,31 @@
+{% extends "index.html" %}
+{% block conteudo %}
+<section class="pagina-autenticacao">
+    <div class="faixa-etapa">
+        <h1>Entrando</h1>
+    </div>
+
+    <div class="auth-container">
+        <h2>Faça login</h2>
+        <div class="auth-card">
+            <h3>Acesse sua conta:</h3>
+            <form method="post" action="/login">
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-mail"></use></svg></span>
+                    <input type="email" name="email" placeholder="E-mail" required autocomplete="username">
+                </label>
+                <label class="campo-com-icone">
+                    <span class="icone-campo" aria-hidden="true"><svg class="icone-svg" aria-hidden="true"><use href="#ico-lock"></use></svg></span>
+                    <input type="password" name="senha" placeholder="Senha" required autocomplete="current-password">
+                </label>
+                <button class="botao botao-auth" type="submit">Entrar</button>
+            </form>
+        </div>
+
+        <div class="auth-rodape">
+            <a class="botao-secundario" href="/formulario">Criar nova conta</a>
+            <a class="botao-voltar" href="/">← Voltar</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

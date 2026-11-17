@@ -1,0 +1,140 @@
+import sqlite3
+
+from flask import (
+    Blueprint, jsonify, render_template,
+    request, session
+)
+
+from app.model.pedido import Pedido, STATUS_PEDIDO_VALIDOS
+from app.middleware import (
+    login_obrigatorio,
+    permissao_obrigatoria
+)
+
+
+pedido_bp = Blueprint("pedido_controller", __name__)
+
+
+@pedido_bp.route("/pedido", methods=["GET"])
+@permissao_obrigatoria("cliente")
+def pagina_pedidos():
+    return render_template("pedidos.html")
+
+
+@pedido_bp.route("/pedidos", methods=["POST"])
+@pedido_bp.route("/api/pedidos", methods=["POST"])
+@login_obrigatorio
+def criar_pedido():
+    dados = request.get_json(silent=True) or {}
+
+    if session.get("tipo") != "cliente":
+        return jsonify({"erro": "Somente clientes podem realizar pedidos."}), 403
+
+    itens = dados.get("itens", [])
+
+    if not isinstance(itens, list) or not itens:
+        return jsonify({
+            "erro": "O pedido precisa ter pelo menos um item."
+        }), 400
+
+    try:
+        pedido_id = Pedido.criar(
+            session["usuario_id"],
+            itens,
+            dados.get("observacoes")
+        )
+
+        return jsonify({
+            "mensagem": "Pedido realizado com sucesso.",
+            "pedido_id": pedido_id
+        }), 201
+
+    except (sqlite3.IntegrityError, sqlite3.OperationalError) as erro:
+        if "Estoque insuficiente" in str(erro):
+            return jsonify({"erro": "Estoque insuficiente para um ou mais itens do pedido."}), 400
+        return jsonify({"erro": "Os itens ou as quantidades são inválidos."}), 400
+
+    except (ValueError, TypeError, KeyError):
+        return jsonify({
+            "erro": "Os itens ou as quantidades são inválidos."
+        }), 400
+
+
+@pedido_bp.route("/pedidos", methods=["GET"])
+@pedido_bp.route("/api/pedidos", methods=["GET"])
+@login_obrigatorio
+def listar_pedidos():
+    if session.get("tipo") in ("administrador", "cozinheiro"):
+        pedidos = Pedido.listar()
+    else:
+        pedidos = Pedido.listar_cliente(session["usuario_id"])
+
+    resultado = []
+    for pedido in pedidos:
+        dados = dict(pedido)
+        dados["itens"] = Pedido.itens_do_pedido(pedido["id"])
+        resultado.append(dados)
+    return jsonify(resultado), 200
+
+
+@pedido_bp.route("/api/pedidos/fila", methods=["GET"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def fila_pedidos():
+    pedidos = Pedido.listar()
+    resultado = []
+    for pedido in pedidos:
+        dados = dict(pedido)
+        dados["itens"] = Pedido.itens_do_pedido(pedido["id"])
+        resultado.append(dados)
+    return jsonify(resultado), 200
+
+
+@pedido_bp.route("/pedidos/<int:id>/status", methods=["PUT"])
+@pedido_bp.route("/api/pedidos/<int:id>/status", methods=["PUT"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def atualizar_status(id):
+    dados = request.get_json(silent=True) or {}
+
+    status = dados.get("status")
+
+    if status not in STATUS_PEDIDO_VALIDOS:
+        return jsonify({
+            "erro": "Status inválido."
+        }), 400
+
+    alterados = Pedido.atualizar_status(id, status)
+
+    if alterados == 0:
+        return jsonify({
+            "erro": "Pedido não encontrado."
+        }), 404
+
+    return jsonify({
+        "mensagem": "Status atualizado com sucesso.",
+        "status": status
+    }), 200
+
+
+@pedido_bp.route("/cozinheiro", methods=["GET"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def pagina_cozinheiro():
+    return render_template("kds.html")
+
+
+@pedido_bp.route("/pedidos/<int:id>/tempo", methods=["PUT"])
+@pedido_bp.route("/api/pedidos/<int:id>/tempo", methods=["PUT"])
+@permissao_obrigatoria("cozinheiro", "administrador")
+def definir_tempo_preparo(id):
+    dados = request.get_json(silent=True) or {}
+    try:
+        minutos = int(dados.get("minutos"))
+        if isinstance(dados.get("minutos"), bool) or minutos < 1 or minutos > 480:
+            raise ValueError()
+    except (TypeError, ValueError):
+        return jsonify({"erro": "Informe um tempo entre 1 e 480 minutos."}), 400
+    if not Pedido.definir_tempo(id, minutos, dados.get("observacoes")):
+        return jsonify({"erro": "Pedido não encontrado."}), 404
+    return jsonify({
+        "mensagem": "Tempo estimado e observações atualizados.",
+        "tempo_estimado": minutos
+    })
